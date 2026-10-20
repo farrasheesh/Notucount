@@ -1,0 +1,32 @@
+{
+ "id": "./",
+ "name": "Stok Opname Farmasi",
+ "short_name": "SO Farmasi",
+ "description": "Aplikasi stok opname farmasi: scan QR rak, input stok fisik dan ED, export Excel.",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#f5efe4",
+ "theme_color": "#b4501f",
+ "lang": "id",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
