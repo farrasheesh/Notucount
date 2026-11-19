@@ -203,6 +203,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-y:contain}
  <div class="card"><h2>Reset</h2><button class="ghost full" id="bReset">Hapus hasil hitung saja</button></div>
 </section>
 <section class="tab" id="t-scan">
+ <div class="card" style="padding:10px 14px"><label style="margin:0 0 4px">Tanggal SO</label><input id="tglSO" type="date"><div class="m" style="margin-top:4px">Ikut tersimpan di tiap hasil hitung, dan ikut ke Excel serta Google Sheet.</div></div>
  <div class="card"><div id="reader"></div>
   <div class="row" style="margin-top:8px"><button id="bCam">Mulai kamera</button><button class="ghost" id="bStop">Stop</button></div>
   <label class="btn ghost full" style="text-align:center;margin-top:8px">Foto QR (pakai kamera HP)<input id="fImg" type="file" accept="image/*" capture="environment" hidden></label>
@@ -223,6 +224,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-y:contain}
   <div class="stat" id="heard">Suara: sebut angka satu per satu. Stok: "dua lima". ED: bulan 2 digit + tahun, "nol tiga dua tujuh" = 03/2027.</div>
   <div class="row"><div><label>Gudang (opsional)</label><input id="fGud" type="number" inputmode="numeric" min="0"></div><div><label>Kelengkapan label (opsional)</label><select id="fKel"><option value="">-</option><option value="Lengkap">Lengkap</option><option value="Tidak lengkap">Tidak lengkap</option></select></div></div>
   <label>Ket. (opsional)</label><input id="fKet" type="text" placeholder="Catatan, boleh kosong">
+  <div class="m" id="fTgl" style="margin-top:10px"></div>
   <div class="row" style="margin-top:12px"><button id="bSave">Simpan</button><button class="ghost" id="bCancel">Batal</button></div></div>
 </section>
 <section class="tab" id="t-list">
@@ -230,7 +232,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-y:contain}
  <div class="stat" id="sList"></div><div id="list"></div></div>
 </section>
 <section class="tab" id="t-exp">
- <div class="card"><h2>Export hasil SO</h2><div class="m">Kolom: Kode Material, Material Description, Rak, Stok Komp, Fisik, Gudang, Selisih, Expired Date, Ket. (catatan, kosong kalau tidak diisi), Kelengkapan Label.</div>
+ <div class="card"><h2>Export hasil SO</h2><div class="m">Kolom: Tanggal SO, Kode Material, Material Description, Rak, Stok Komp, Fisik, Gudang, Selisih, Expired Date, Ket. (catatan, kosong kalau tidak diisi), Kelengkapan Label.</div>
  <label>Rak yang di-export</label><select id="rakExp"><option value="">Semua rak</option></select>
  <label>Status</label><select id="stExp"><option value="">Semua</option><option value="h">Sudah dihitung</option><option value="b">Belum dihitung</option><option value="s">Selisih</option><option value="ok">Sesuai</option><option value="w">Melebihi batas</option></select>
  <button class="full" id="bExp" style="margin-top:10px">Export ke Excel</button><div class="stat" id="sExp"></div></div>
@@ -240,6 +242,22 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-y:contain}
  <div class="row" style="margin-top:8px"><button id="sbShareDb" class="ghost">Bagikan database obat</button><button id="sbShareStok" class="ghost">Bagikan stok (SO baru)</button></div>
  <button class="ghost full" id="sbBase" style="margin-top:8px">Ambil data dari tim</button>
  <button class="ghost full" id="sbClear" style="margin-top:8px">Kosongkan data tim (SO baru)</button><div class="stat" id="sbStat">Siap.</div></div>
+ <div class="card"><h2>Google Sheets (opsional)</h2><div class="m">Kirim data ke Google Sheet sendiri lewat Apps Script, tanpa token. Hasilnya dipisah per sheet: "Database" dan "Hasil SO".</div>
+ <label>URL Web App (berakhiran /exec)</label><input id="gsUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="none" placeholder="https://script.google.com/macros/s/.../exec">
+ <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="gsOn" type="checkbox" style="width:auto;min-height:0"> Kirim otomatis tiap Simpan</label>
+ <div class="row" style="margin-top:8px"><button id="gsTes" class="ghost" type="button">Tes koneksi</button><button id="gsDb" class="ghost" type="button">Kirim database</button></div>
+ <button id="gsSo" class="ghost full" type="button" style="margin-top:8px">Kirim semua hasil SO</button>
+ <div class="stat" id="gStat">Belum diatur.</div>
+ <details style="margin-top:8px"><summary><b>Panduan &amp; kode Apps Script</b></summary>
+ <ol class="m" style="padding-left:20px;margin:6px 0">
+ <li>Buka Google Sheet kosong, lalu menu Extensions &gt; Apps Script.</li>
+ <li>Hapus isi editor, tempel kode di bawah (tombol Salin kode), lalu Simpan.</li>
+ <li>Deploy &gt; New deployment &gt; jenis Web app. Execute as: Me. Who has access: Anyone. Klik Deploy dan izinkan akses.</li>
+ <li>Salin Web app URL (berakhiran /exec) ke kolom di atas, lalu tekan Tes koneksi.</li>
+ <li>Tekan Kirim database. Hasil SO terkirim otomatis tiap Simpan, atau tekan Kirim semua hasil SO.</li></ol>
+ <div class="m">Kalau kode diubah: Deploy &gt; Manage deployments &gt; Edit &gt; Version: New version. Tanpa token berarti siapa pun yang punya URL bisa menulis ke sheet, jadi jangan bagikan URL di luar tim.</div>
+ <textarea id="gsCode" readonly rows="10" style="width:100%;margin-top:8px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"></textarea>
+ <button id="gsCopy" class="full" type="button" style="margin-top:8px">Salin kode</button></details></div>
 </section>
 </main>
 <button id="gFab" type="button" aria-label="Feeding Frenzy"><svg viewBox="0 0 32 32"><path fill="#1c78b8" d="M3 16c5-7 13-8 19-3l6-5v16l-6-5c-6 5-14 4-19-3z"/><circle cx="9" cy="14" r="1.7" fill="#fff"/></svg></button>
@@ -315,7 +333,7 @@ $('#bTpl').onclick=async()=>{const rk=$('#rakForm').value;const rows=[['Kode Mat
 $('#bReset').onclick=()=>{if(confirm('Hapus semua hasil hitung di HP ini?')){so={};LS.s('so_res',so);since=Date.now();LS.s('so_since',since);Q.clear();qSave();stats();render()}};
 async function save(name,wb){try{XLSX.writeFile(wb,name);toast('File disimpan: '+name)}catch(e){toast('Gagal export: '+(e.message||e))}}
 function match(t){t=norm(t);if(db[t])return t;const m=t.match(/\d{8,12}/g)||[];for(const x of m)if(db[x])return x;return null}
-function showItem(c){cur=c;const it=db[c],h=so[c];$('#fName').textContent=it.n||c;$('#fMeta').textContent=`${c} · Rak ${it.r||'-'}`;$('#fKomp').innerHTML='Stok komputer: <b style="font-size:22px">'+(c in sys?sys[c]:'belum diinput')+'</b>';$('#fQty').value=h?h.f:'';$('#fEd').value=h&&h.ed?h.ed.slice(0,7):'';$('#fGud').value=h&&h.g!=null?h.g:'';$('#fKel').value=h&&h.k?h.k:'';$('#fKet').value=h&&h.m?h.m:'';$('#form').style.display='block';lastW='';fw();$('#fQty').focus()}
+function showItem(c){cur=c;const it=db[c],h=so[c];$('#fName').textContent=it.n||c;$('#fMeta').textContent=`${c} · Rak ${it.r||'-'}`;$('#fKomp').innerHTML='Stok komputer: <b style="font-size:22px">'+(c in sys?sys[c]:'belum diinput')+'</b>';$('#fQty').value=h?h.f:'';$('#fEd').value=h&&h.ed?h.ed.slice(0,7):'';$('#fGud').value=h&&h.g!=null?h.g:'';$('#fKel').value=h&&h.k?h.k:'';$('#fKet').value=h&&h.m?h.m:'';$('#form').style.display='block';lastW='';fw();$('#fTgl').textContent='Tanggal SO: '+($('#tglSO').value||ymd())+' (ubah di bagian atas tab Scan)';$('#fQty').focus()}
 function onScan(t){const c=match(t);if(!c){if(newOn)return;const m=String(t).match(/\d{8,12}/);try{navigator.vibrate&&navigator.vibrate([60,40,60])}catch(e){}return showNew(m?m[0]:norm(t).slice(0,40),'')}try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}stopCam();showItem(c)}
 async function startCam(){if(qr)return;if(typeof Html5Qrcode==='undefined')return toast('Library scan belum termuat, cek internet');qr=new Html5Qrcode('reader');try{await qr.start({facingMode:'environment'},{fps:10,qrbox:{width:230,height:230}},onScan,()=>{})}catch(e){qr=null;toast('Kamera gagal ('+((e&&e.name)||String(e)).slice(0,40)+'). Pakai tombol Foto QR')}}
 $('#fImg').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{await stopCam();const h=new Html5Qrcode('reader');const t=await h.scanFile(f,false);try{h.clear()}catch(x){}onScan(t)}catch(x){toast('QR tidak terbaca, foto lebih dekat dan fokus')}};
@@ -326,7 +344,7 @@ $('#bFind').onclick=()=>{const v=$('#manual').value.trim(),box=$('#mCand');box.i
   if(ks.length===1)c=ks[0];else if(ks.length>1){box.innerHTML=ks.slice(0,10).map(k=>'<div class="item" data-c="'+k+'"><b>'+esc(db[k].n)+'</b><span class="m">'+k+' | Rak '+esc(db[k].r||'-')+'</span></div>').join('')+(ks.length>10?'<div class="m">Ada '+ks.length+' hasil, sebut lebih banyak angka.</div>':'');return}}
  if(!c){if(!v)return toast('Isi nama atau kode obat');const rs=nameSearch(v);if(rs.length===1)c=rs[0];else return showCand(v,rs)}$('#manual').value='';stopCam();showItem(c)};
 $('#mCand').onclick=e=>{const d=e.target.closest('.item');if(!d)return;$('#mCand').innerHTML='';$('#manual').value='';stopCam();showItem(d.dataset.c)};
-$('#bSave').onclick=()=>{const v=$('#fQty').value;if(v===''||Number(v)<0)return toast('Isi stok fisik');so[cur]={f:Number(v),ed:$('#fEd').value,t:Date.now(),g:$('#fGud').value===''?null:Number($('#fGud').value),k:$('#fKel').value,m:$('#fKet').value.trim()};
+$('#bSave').onclick=()=>{const v=$('#fQty').value;if(v===''||Number(v)<0)return toast('Isi stok fisik');so[cur]={f:Number(v),ed:$('#fEd').value,t:Date.now(),d:$('#tglSO').value||ymd(),g:$('#fGud').value===''?null:Number($('#fGud').value),k:$('#fKel').value,m:$('#fKet').value.trim()};
  if(LS.s('so_res',so)){toast('Tersimpan');qAdd(cur);$('#form').style.display='none';cur=null;stats();render();startCam()}};
 $('#bCancel').onclick=()=>{$('#form').style.display='none';cur=null;startCam()};
 function status(c){const h=so[c];if(!h)return['Belum dihitung','b'];const d=h.f-(sys[c]||0);return d===0?['Sesuai','ok']:[(d>0?'+':'')+d,'s']}
@@ -334,16 +352,16 @@ function fillRak(){const r=[...new Set(Object.values(db).map(x=>x.r).filter(Bool
 function render(){const q=$('#q').value.toLowerCase(),rk=$('#fRak').value,st=$('#fSt').value;let out=[],tot=0;
  for(const c in db){const it=db[c];if(rk&&it.r!==rk)continue;if(q&&!mt(c,it,q))continue;const s=status(c);if(st==='h'?!so[c]:st==='w'?!(so[c]&&wchk(c,so[c].f)):(st&&s[1]!==st))continue;tot++;if(out.length<80)out.push([c,it,s])}
  $('#sList').textContent=`${tot} obat${tot>80?' (tampil 80 pertama, persempit pencarian)':''}`;
- $('#list').innerHTML=out.map(([c,it,s])=>{const h=so[c];return `<div class="item" data-c="${c}"><b>${esc(it.n)}</b><span class="m">${c} · Rak ${esc(it.r||'-')} · Komputer ${sys[c]??0}${h?` · Fisik ${h.f}${h.ed?` · ED ${h.ed}`:''}${h.g!=null?` · Gudang ${h.g}`:''}${h.k?` · Label ${h.k}`:''}${h.m?` · Ket ${esc(h.m)}`:''}`:''}</span> <span class="tag ${s[1]==='ok'?'ok':s[1]==='s'?'bd':'wr'}">${s[0]}</span>${h&&wchk(c,h.f)?' <span class="tag bd">PERIKSA</span>':''}</div>`}).join('')}
+ $('#list').innerHTML=out.map(([c,it,s])=>{const h=so[c];return `<div class="item" data-c="${c}"><b>${esc(it.n)}</b><span class="m">${c} · Rak ${esc(it.r||'-')} · Komputer ${sys[c]??0}${h?` · Tgl ${dateOf(h)} · Fisik ${h.f}${h.ed?` · ED ${h.ed}`:''}${h.g!=null?` · Gudang ${h.g}`:''}${h.k?` · Label ${h.k}`:''}${h.m?` · Ket ${esc(h.m)}`:''}`:''}</span> <span class="tag ${s[1]==='ok'?'ok':s[1]==='s'?'bd':'wr'}">${s[0]}</span>${h&&wchk(c,h.f)?' <span class="tag bd">PERIKSA</span>':''}</div>`}).join('')}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 ['q','fRak','fSt'].forEach(i=>$('#'+i).oninput=render);
 $('#list').onclick=e=>{const d=e.target.closest('.item');if(!d)return;tab('scan');stopCam();showItem(d.dataset.c)};
 $('#bExp').onclick=async()=>{if(!Object.keys(db).length)return toast('Database kosong');
- const rows=[['Kode Material','Material Description','Rak','Stok Komp','Fisik','Gudang','Selisih','Expired Date','Ket.','Kelengkapan Label']];
+ const rows=[['Tanggal SO','Kode Material','Material Description','Rak','Stok Komp','Fisik','Gudang','Selisih','Expired Date','Ket.','Kelengkapan Label']];
  const rk=$('#rakExp').value;const codes=[...new Set([...Object.keys(db),...Object.keys(sys)])].filter(c=>!rk||(db[c]&&db[c].r===rk)).filter(c=>{const st=$('#stExp').value;if(!st)return true;const x=so[c],k=sys[c]||0;return st==='h'?!!x:st==='b'?!x:st==='ok'?!!(x&&x.f===k):st==='w'?!!(x&&wchk(c,x.f)):!!(x&&x.f!==k)});const STN={h:'sudah-dihitung',b:'belum-dihitung',s:'selisih',ok:'sesuai',w:'melebihi-batas'};
- codes.forEach(c=>{const it=db[c]||{n:'(tidak ada di database)',r:''},h=so[c],k=sys[c]||0;rows.push([c,it.n,it.r,k,h?h.f:'',h&&h.g!=null?h.g:'','',h&&h.ed?h.ed:'',h&&h.m?h.m:'',h&&h.k?h.k:''])});
- const ws=XLSX.utils.aoa_to_sheet(rows);for(let i=1;i<rows.length;i++){const r=i+1,e=rows[i][4],dd=rows[i][3],v=(e===''||e==null)?'':e-dd;ws['G'+r]={t:v===''?'s':'n',v:v,f:'IF(E'+r+'="","",E'+r+'-D'+r+')'}}
- ws['!cols']=[{wch:14},{wch:44},{wch:6},{wch:10},{wch:8},{wch:8},{wch:9},{wch:12},{wch:16},{wch:16}];
+ codes.forEach(c=>{const it=db[c]||{n:'(tidak ada di database)',r:''},h=so[c],k=sys[c]||0;rows.push([h?dateOf(h):'',c,it.n,it.r,k,h?h.f:'',h&&h.g!=null?h.g:'','',h&&h.ed?h.ed:'',h&&h.m?h.m:'',h&&h.k?h.k:''])});
+ const ws=XLSX.utils.aoa_to_sheet(rows);for(let i=1;i<rows.length;i++){const r=i+1,e=rows[i][5],dd=rows[i][4],v=(e===''||e==null)?'':e-dd;ws['H'+r]={t:v===''?'s':'n',v:v,f:'IF(F'+r+'="","",F'+r+'-E'+r+')'}}
+ ws['!cols']=[{wch:12},{wch:14},{wch:44},{wch:6},{wch:10},{wch:8},{wch:8},{wch:9},{wch:12},{wch:16},{wch:16}];
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Hasil SO');await save('hasil_SO_'+(rk?'rak'+rk+'_':'')+($('#stExp').value?STN[$('#stExp').value]+'_':'')+new Date().toISOString().slice(0,10)+'.xlsx',wb)};
 function tab(n){window.scrollTo(0,0);document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.id==='t-'+n));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===n));if(n!=='scan')stopCam();if(n==='list'){render();if(SYNC.on)chkSesi(true).then(()=>pull())}}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
@@ -375,7 +393,7 @@ async function flush(){if(!SYNC.on||flushing||!Q.size||!navigator.onLine)return;
    if(!r.ok)throw new Error(r.status+' '+(await r.text()).slice(0,80));part.forEach(c=>Q.delete(c));ok+=part.length}
   [...Q].forEach(c=>{if(!so[c])Q.delete(c)});sbStat('Terkirim '+ok+' baris. Antrean: '+Q.size)}
  catch(e){sbStat('Gagal kirim, dicoba lagi nanti: '+(e.message||e))}finally{qSave();flushing=false}}
-function qAdd(c){Q.add(c);qSave();flush()}
+function qAdd(c){Q.add(c);qSave();flush();gsQ(c)}
 async function pull(){if(!navigator.onLine)return sbStat('Offline, tidak bisa tarik.');sbStat('Menarik hasil tim...');
  try{let n=0,off=0,add=0;for(;;){const r=await fetch(SB+'/rest/v1/so_hasil?select=*&order=kode&limit=1000&offset='+off,{headers:SBH});if(!r.ok)throw new Error(r.status);const rows=await r.json();
   rows.forEach(x=>{if(x.stok_fisik==null)return;const t=Date.parse(x.updated_at)||0;if((x.sesi||'')!==SESI)return;const l=so[x.kode];if(!l||(l.t||0)<t){so[x.kode]={f:Number(x.stok_fisik),ed:x.ed||'',t,g:x.gudang==null?null:Number(x.gudang),k:x.kelengkapan||'',m:x.ket||''};add++}});
@@ -420,7 +438,7 @@ $('#mKode').onchange=()=>{const o=db[norm($('#mKode').value)];if(o&&!$('#mNama')
 $('#mSave').onclick=()=>{const k=norm($('#mKode').value),n=$('#mNama').value.trim(),r=$('#mRak').value.trim();
  if(!k||!n)return toast('Kode dan Nama wajib diisi');
  if(db[k]&&!confirm('Kode sudah ada. Timpa data lama?'))return;
- db[k]={n,r};if(LS.s('so_db',db)){toast('Tersimpan di database');if(SYNC.on)sbUp('so_master',[{kode:k,nama:n,rak:r||null}]).catch(()=>toast('Belum terkirim ke tim'));['mKode','mNama','mRak'].forEach(i=>$('#'+i).value='');mPrev();stats();fillRak();render()}};
+ db[k]={n,r};if(LS.s('so_db',db)){toast('Tersimpan di database');if(SYNC.on)sbUp('so_master',[{kode:k,nama:n,rak:r||null}]).catch(()=>toast('Belum terkirim ke tim'));gsDb(k,n,r);['mKode','mNama','mRak'].forEach(i=>$('#'+i).value='');mPrev();stats();fillRak();render()}};
 function sPrev(){const k=norm($('#sKode').value),q=$('#sQty').value;let t;
  if(!k)t='Isi Kode Material dulu.';else{const it=db[k];t=(it?(it.n||k)+' | Rak '+(it.r||'-'):'Peringatan: kode tidak ada di database (tetap bisa disimpan)')+'\nStok komputer: '+(k in sys?sys[k]:'belum ada')+' jadi '+(q===''?'(isi stok)':q)}
  $('#sPrev').textContent=t}
@@ -627,7 +645,7 @@ document.addEventListener('touchstart',e=>{p2rY=e.touches[0]?e.touches[0].client
 document.addEventListener('touchmove',e=>{if(!e.touches||e.touches.length!==1)return;const dy=e.touches[0].clientY-p2rY;if(dy<=0||window.scrollY>0)return;
  let el=e.target;while(el&&el!==document.body&&el!==document.documentElement){if(el.scrollHeight>el.clientHeight+1&&/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollTop>0)return;el=el.parentElement}
  if(e.cancelable)e.preventDefault()},{passive:false});
-var APPV='v44';
+var APPV='v46';
 function doReload(){location.reload()}
 try{localStorage.removeItem('so_navmin');localStorage.removeItem('so_navhint')}catch(e){}
 $('#verInfo').textContent='Versi: '+APPV;
@@ -649,10 +667,13 @@ const _cf=window.confirm.bind(window);window.confirm=m=>_cf(trs(m));
 mo.observe(document.body,{childList:true,subtree:true,characterData:true});
 $('#langSel').onchange=()=>{LANG=$('#langSel').value;LS.s('so_lang',LANG);applyLang()};
 var newOn=false;
-function nameSearch(v){v=String(v).toLowerCase().trim();if(!v)return[];const tk=v.split(/\s+/),out=[];
- for(const c in db){const it=db[c],n=(it.n||'').toLowerCase();if(!tk.every(t=>(n+' '+c).includes(t)))continue;
-  const nn=n.replace(/^[^a-z0-9]+/,'');out.push([c,nn,/^\d+$/.test(v)&&c.endsWith(v)?0:nn.startsWith(v)?1:nn.split(/\s+/).some(w=>w.startsWith(tk[0]))?2:3])}
- out.sort((a,b)=>a[2]-b[2]||a[1].localeCompare(b[1],'id',{numeric:true}));return out.map(x=>x[0])}
+const fold=x=>String(x).toLowerCase().replace(/ph/g,'f').replace(/ch/g,'k').replace(/x/g,'ks').replace(/th/g,'t').replace(/ck/g,'k').replace(/c(?=[eiy])/g,'s').replace(/c/g,'k').replace(/q/g,'k').replace(/y/g,'i').replace(/z/g,'s').replace(/([a-z])\1+/g,'$1');
+function nameSearch(v){v=String(v).toLowerCase().trim();if(!v)return[];
+ const run=f=>{const q=f(v),tk=q.split(/\s+/),out=[];
+  for(const c in db){const n=f(db[c].n||''),nn=n.replace(/^[^a-z0-9]+/,'');if(!tk.every(t=>(n+' '+c).includes(t)))continue;
+   out.push([c,nn,/^\d+$/.test(q)&&c.endsWith(q)?0:nn.startsWith(q)?1:nn.split(/\s+/).some(w=>w.startsWith(tk[0]))?2:3])}
+  out.sort((a,b)=>a[2]-b[2]||a[1].localeCompare(b[1],'id',{numeric:true}));return out.map(x=>x[0])};
+ const r=run(x=>String(x).toLowerCase());return r.length?r:run(fold)}
 function candHtml(v,rs){let h=rs.slice(0,8).map(k=>'<div class="item" data-c="'+k+'"><b>'+esc(db[k].n)+'</b><span class="m">'+k+' | Rak '+esc(db[k].r||'-')+(so[k]?' | sudah dihitung':'')+'</span></div>').join('');
  if(rs.length>8)h+='<div class="m" style="padding:6px 0">Ada '+rs.length+' hasil, ketik lebih spesifik.</div>';
  if(!rs.length)h='<div class="m" style="padding:6px 0">Tidak ada yang cocok dengan "'+esc(v)+'".</div><button class="ghost full addNew" type="button" data-v="'+esc(v)+'">Tambah sebagai obat baru</button>';
@@ -672,8 +693,152 @@ $('#nCancel').onclick=()=>{hideNew();startCam()};
 $('#nSave').onclick=()=>{const k=norm($('#nKode').value),n=$('#nNama').value.trim(),r=$('#nRak').value.trim();
  if(!k||!n)return toast('Kode dan Nama wajib diisi');
  if(db[k]&&!confirm('Kode sudah ada di database. Timpa data lama?'))return;
- db[k]={n,r};if(LS.s('so_db',db)){if(SYNC.on)sbUp('so_master',[{kode:k,nama:n,rak:r||null}]).catch(()=>toast('Belum terkirim ke tim'));
+ db[k]={n,r};if(LS.s('so_db',db)){if(SYNC.on)sbUp('so_master',[{kode:k,nama:n,rak:r||null}]).catch(()=>toast('Belum terkirim ke tim'));gsDb(k,n,r);
   hideNew();fillRak();stats();render();toast('Obat baru masuk database');showItem(k)}};
+
+$('#vManual').onclick=()=>{if(!SR)return toast('Voice tidak didukung browser ini');const r=new SR();r.lang=SRL[LANG];r.maxAlternatives=3;r.interimResults=false;
+ r.onerror=e=>toast('Suara gagal: '+e.error);r.onstart=()=>toast('Sebut nama obat atau angka kode...');
+ r.onresult=e=>{const alts=Array.from(e.results[0]).map(a=>String(a.transcript).trim()).filter(Boolean);if(!alts.length)return;
+  const isNum=t=>digits(t)&&t.normalize('NFKC').toLowerCase().replace(/[.,。、]/g,' ').split(/\s+/).filter(Boolean).every(w=>/^\d+$/.test(w)||w in DW||[...w].every(c=>c in CJ||/\d/.test(c)));
+  const t0=alts[0];
+  if(isNum(t0)){const d=digits(t0);$('#manual').value=d;toast('Terdengar "'+t0+'", cari kode berakhiran '+d);return $('#bFind').click()}
+  const t=alts.find(a=>!isNum(a)&&nameSearch(a).length)||t0;$('#manual').value=t;toast('Terdengar "'+t+'"');$('#bFind').click()};
+ try{r.start()}catch(x){toast('Mik tidak bisa dimulai')}};
+
+function pad2(n){return String(n).padStart(2,'0')}
+function ymd(t){const d=new Date(t||Date.now());return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate())}
+function dateOf(h){return h?(h.d||ymd(h.t)):''}
+$('#tglSO').value=LS.g('so_tgl','')||ymd();
+$('#tglSO').onchange=()=>LS.s('so_tgl',$('#tglSO').value);
+const GSCODE=String.raw`// ===== Stok Opname Farmasi - Google Apps Script (tanpa token) =====
+// Pasang: buka Google Sheet > Extensions > Apps Script > hapus isi editor >
+// tempel kode ini > Simpan. Lalu Deploy > New deployment > Web app,
+// Execute as: Me, Who has access: Anyone > Deploy. Salin URL /exec ke aplikasi.
+
+var SHEET_DB = 'Database';
+var SHEET_SO = 'Hasil SO';
+var HEAD_DB = ['Kode Material', 'Nama Material', 'Rak'];
+var HEAD_SO = ['Tanggal SO', 'Kode Material', 'Material Description', 'Rak', 'Stok Komp', 'Fisik', 'Gudang', 'Selisih', 'Expired Date', 'Ket.', 'Kelengkapan Label', 'Waktu Input'];
+var TEXT_DB = [1];        // nomor kolom berformat teks
+var TEXT_SO = [1, 2, 9];
+var KEY_DB = [0];         // kolom kunci (mulai 0)
+var KEY_SO = [0, 1];      // Tanggal SO + Kode Material
+
+function doGet() {
+  return out_({ ok: true, pesan: 'Script Stok Opname Farmasi aktif' });
+}
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var d = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) throw new Error('Buat script dari menu Extensions > Apps Script di dalam Google Sheet');
+    var rows = d.rows || [];
+    var n = 0;
+    if (d.aksi === 'db_kosong') kosongkan_(ss, SHEET_DB, HEAD_DB);
+    else if (d.aksi === 'db_tambah') n = tambah_(ss, SHEET_DB, HEAD_DB, TEXT_DB, rows);
+    else if (d.aksi === 'db') n = upsert_(ss, SHEET_DB, HEAD_DB, TEXT_DB, KEY_DB, rows);
+    else if (d.aksi === 'so') n = upsert_(ss, SHEET_SO, HEAD_SO, TEXT_SO, KEY_SO, rows);
+    else throw new Error('Aksi tidak dikenal: ' + d.aksi);
+    return out_({ ok: true, n: n });
+  } catch (err) {
+    return out_({ ok: false, error: String(err) });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function out_(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function sheet_(ss, name, head) {
+  var sh = ss.getSheetByName(name) || ss.insertSheet(name);
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function tulis_(sh, text, startRow, data) {
+  if (!data.length) return;
+  var need = startRow + data.length - 1;
+  if (sh.getMaxRows() < need) sh.insertRowsAfter(sh.getMaxRows(), need - sh.getMaxRows());
+  for (var i = 0; i < text.length; i++) sh.getRange(startRow, text[i], data.length, 1).setNumberFormat('@');
+  sh.getRange(startRow, 1, data.length, data[0].length).setValues(data);
+}
+
+function key_(r, keyIdx) {
+  return keyIdx.map(function (i) { return String(r[i]); }).join('|');
+}
+
+function kosongkan_(ss, name, head) {
+  var sh = sheet_(ss, name, head);
+  if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, head.length).clearContent();
+}
+
+function tambah_(ss, name, head, text, rows) {
+  var sh = sheet_(ss, name, head);
+  tulis_(sh, text, Math.max(sh.getLastRow(), 1) + 1, rows);
+  return rows.length;
+}
+
+function upsert_(ss, name, head, text, keyIdx, rows) {
+  var sh = sheet_(ss, name, head);
+  var last = sh.getLastRow();
+  var data = last > 1 ? sh.getRange(2, 1, last - 1, head.length).getValues() : [];
+  var idx = {}, i;
+  for (i = 0; i < data.length; i++) idx[key_(data[i], keyIdx)] = i;
+  var ubah = {}, baru = [], idxBaru = {};
+  rows.forEach(function (r) {
+    var k = key_(r, keyIdx);
+    if (k in idx) { data[idx[k]] = r; ubah[idx[k]] = true; }
+    else if (k in idxBaru) baru[idxBaru[k]] = r;
+    else { idxBaru[k] = baru.length; baru.push(r); }
+  });
+  var u = Object.keys(ubah);
+  if (u.length > 30) tulis_(sh, text, 2, data);
+  else u.forEach(function (j) { tulis_(sh, text, Number(j) + 2, [data[j]]); });
+  tulis_(sh, text, data.length + 2, baru);
+  return rows.length;
+}
+`;
+$('#gsCode').value=GSCODE;
+let GS=LS.g('so_gs',{url:'',on:true}),GQ=new Set(LS.g('so_gq',[])),gFl=false;
+const gStat=m=>{$('#gStat').textContent=m};
+const gsOk=()=>/^https:\/\/script\.google\.com\/(a\/[^\/]+\/)?macros\/s\/[^\s]+\/exec$/.test((GS.url||'').trim());
+const gsErr=e=>e instanceof SyntaxError?'Balasan bukan dari script. Deploy ulang dengan akses "Anyone".':e instanceof TypeError?'Tidak terhubung. Cek internet dan URL.':(e.message||String(e));
+async function gsPost(o){const body=JSON.stringify(o),u=GS.url.trim();
+ try{const r=await fetch(u,{method:'POST',body});const j=await r.json();if(!j.ok)throw new Error(j.error||'Script menolak data');return j}
+ catch(e){if(e instanceof TypeError){await fetch(u,{method:'POST',body,mode:'no-cors'});return{ok:true,n:0,tanpaKonfirmasi:true}}throw e}}
+const gsRowDb=c=>[c,db[c].n||'',db[c].r||''];
+function gsRowSo(c){const it=db[c]||{},h=so[c],d=new Date(h.t||Date.now());
+ return[dateOf(h),c,it.n||'',it.r||'',c in sys?sys[c]:'',h.f,h.g==null?'':h.g,h.f-(sys[c]||0),h.ed||'',h.m||'',h.k||'',ymd(d)+' '+pad2(d.getHours())+':'+pad2(d.getMinutes())]}
+function gsQ(c){if(!gsOk()||GS.on===false)return;GQ.add(c);LS.s('so_gq',[...GQ]);flushG()}
+function gsDb(k,n,r){if(!gsOk()||GS.on===false)return;gsPost({aksi:'db',rows:[[k,n,r||'']]}).catch(()=>toast('Belum terkirim ke Sheet. Tekan "Kirim database" nanti.'))}
+async function flushG(force){if(!gsOk()||(!force&&GS.on===false)||gFl||!GQ.size||!navigator.onLine)return;gFl=true;
+ const cs=[...GQ].filter(c=>so[c]);let ok=0;
+ try{for(let i=0;i<cs.length;i+=300){const part=cs.slice(i,i+300);await gsPost({aksi:'so',rows:part.map(gsRowSo)});part.forEach(c=>GQ.delete(c));ok+=part.length}
+  [...GQ].forEach(c=>{if(!so[c])GQ.delete(c)});gStat('Terkirim ke sheet "Hasil SO": '+ok+' baris. Antrean: '+GQ.size)}
+ catch(e){gStat('Gagal kirim ke Sheet, dicoba lagi nanti: '+gsErr(e))}finally{LS.s('so_gq',[...GQ]);gFl=false}}
+$('#gsUrl').value=GS.url||'';$('#gsOn').checked=GS.on!==false;
+gStat(GS.url?(gsOk()?'URL tersimpan. Tekan Tes koneksi untuk mengecek.':'URL belum valid, harus berakhiran /exec.'):'Belum diatur.');
+$('#gsUrl').onchange=()=>{GS.url=$('#gsUrl').value.trim();LS.s('so_gs',GS);gStat(!GS.url?'Belum diatur.':gsOk()?'URL tersimpan. Tekan Tes koneksi untuk mengecek.':'URL belum valid, harus berawalan https://script.google.com/ dan berakhiran /exec.');flushG()};
+$('#gsOn').onchange=()=>{GS.on=$('#gsOn').checked;LS.s('so_gs',GS);if(GS.on)flushG()};
+$('#gsTes').onclick=async()=>{if(!gsOk())return gStat('Isi URL Web App yang valid dulu (berakhiran /exec).');gStat('Menguji koneksi...');
+ try{const r=await fetch(GS.url.trim());const j=await r.json();gStat(j.ok?'Terhubung: '+(j.pesan||'OK'):'Script membalas error: '+(j.error||'?'))}catch(e){gStat('Gagal: '+gsErr(e))}};
+$('#gsDb').onclick=async()=>{if(!gsOk())return gStat('Isi URL Web App yang valid dulu.');const ks=Object.keys(db);if(!ks.length)return gStat('Database kosong.');
+ if(!confirm('Kirim database ke sheet "Database"? Isi lama sheet itu diganti.'))return;
+ try{gStat('Mengirim database...');await gsPost({aksi:'db_kosong'});
+  for(let i=0;i<ks.length;i+=500){await gsPost({aksi:'db_tambah',rows:ks.slice(i,i+500).map(gsRowDb)});gStat('Mengirim database... '+Math.min(i+500,ks.length)+'/'+ks.length)}
+  gStat('Database terkirim: '+ks.length+' obat ke sheet "Database".')}catch(e){gStat('Gagal: '+gsErr(e))}};
+$('#gsSo').onclick=async()=>{if(!gsOk())return gStat('Isi URL Web App yang valid dulu.');const ks=Object.keys(so);if(!ks.length)return gStat('Belum ada hasil hitung.');
+ ks.forEach(c=>GQ.add(c));LS.s('so_gq',[...GQ]);gStat('Mengirim hasil SO...');await flushG(true)};
+$('#gsCopy').onclick=async()=>{const t=$('#gsCode');try{await navigator.clipboard.writeText(t.value);toast('Kode disalin')}catch(e){t.focus();t.select();try{document.execCommand('copy');toast('Kode disalin')}catch(x){toast('Tekan lama lalu Salin')}}};
+window.addEventListener('online',()=>flushG());setInterval(()=>flushG(),30000);setTimeout(()=>flushG(),2000);
 
 $('#kbMode').onclick=()=>{const i=$('#manual'),n=i.inputMode==='numeric';i.inputMode=n?'text':'numeric';$('#kbMode').textContent=n?'123':'ABC';i.blur();i.focus()};
 applyLang();
