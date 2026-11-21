@@ -220,6 +220,14 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-y:contain}
   <div class="big" id="fName"></div><div class="m" id="fMeta"></div><div class="komp" id="fKomp"></div>
   <div class="row"><div><label>Stok fisik</label><div class="row"><input id="fQty" type="number" inputmode="numeric" min="0"><button class="ghost mic" data-k="q" type="button"><i class="ic"></i></button></div></div>
   <div><label>ED (bulan-tahun)</label><div class="row"><input id="fEd" type="month"><button class="ghost mic" data-k="e" type="button"><i class="ic"></i></button></div></div></div>
+  <button class="ghost full" id="bCalc" type="button" style="margin-top:8px">Kalkulator + × −</button>
+  <div id="calcBox" style="display:none;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)">
+   <style>#calcPad button{font-size:22px;padding:0;min-height:50px}</style>
+   <div id="calcExp" style="font-size:24px;text-align:right;min-height:32px;word-break:break-all">0</div>
+   <div id="calcRes" class="m" style="text-align:right;font-size:16px">= 0</div>
+   <div id="calcPad" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px"><button type="button" class="ghost" data-d="7">7</button><button type="button" class="ghost" data-d="8">8</button><button type="button" class="ghost" data-d="9">9</button><button type="button" data-o="×">×</button><button type="button" class="ghost" data-d="4">4</button><button type="button" class="ghost" data-d="5">5</button><button type="button" class="ghost" data-d="6">6</button><button type="button" data-o="−">−</button><button type="button" class="ghost" data-d="1">1</button><button type="button" class="ghost" data-d="2">2</button><button type="button" class="ghost" data-d="3">3</button><button type="button" data-o="+">+</button><button type="button" class="ghost" data-c="C">C</button><button type="button" class="ghost" data-d="0">0</button><button type="button" class="ghost" data-d="00">00</button><button type="button" class="ghost" data-c="B">⌫</button></div>
+   <button id="calcOk" type="button" class="full" style="margin-top:8px">Pakai hasil</button>
+  </div>
   <div class="warn" id="fWarn"></div>
   <div class="stat" id="heard">Suara: sebut angka satu per satu. Stok: "dua lima". ED: bulan 2 digit + tahun, "nol tiga dua tujuh" = 03/2027.</div>
   <div class="row"><div><label>Gudang (opsional)</label><input id="fGud" type="number" inputmode="numeric" min="0"></div><div><label>Kelengkapan label (opsional)</label><select id="fKel"><option value="">-</option><option value="Lengkap">Lengkap</option><option value="Tidak lengkap">Tidak lengkap</option></select></div></div>
@@ -333,7 +341,7 @@ $('#bTpl').onclick=async()=>{const rk=$('#rakForm').value;const rows=[['Kode Mat
 $('#bReset').onclick=()=>{if(confirm('Hapus semua hasil hitung di HP ini?')){so={};LS.s('so_res',so);since=Date.now();LS.s('so_since',since);Q.clear();qSave();stats();render()}};
 async function save(name,wb){try{XLSX.writeFile(wb,name);toast('File disimpan: '+name)}catch(e){toast('Gagal export: '+(e.message||e))}}
 function match(t){t=norm(t);if(db[t])return t;const m=t.match(/\d{8,12}/g)||[];for(const x of m)if(db[x])return x;return null}
-function showItem(c){cur=c;const it=db[c],h=so[c];$('#fName').textContent=it.n||c;$('#fMeta').textContent=`${c} · Rak ${it.r||'-'}`;$('#fKomp').innerHTML='Stok komputer: <b style="font-size:22px">'+(c in sys?sys[c]:'belum diinput')+'</b>';$('#fQty').value=h?h.f:'';$('#fEd').value=h&&h.ed?h.ed.slice(0,7):'';$('#fGud').value=h&&h.g!=null?h.g:'';$('#fKel').value=h&&h.k?h.k:'';$('#fKet').value=h&&h.m?h.m:'';$('#form').style.display='block';lastW='';fw();$('#fTgl').textContent='Tanggal SO: '+($('#tglSO').value||ymd())+' (ubah di bagian atas tab Scan)';$('#fQty').focus()}
+function showItem(c){cur=c;const it=db[c],h=so[c];$('#fName').textContent=it.n||c;$('#fMeta').textContent=`${c} · Rak ${it.r||'-'}`;$('#fKomp').innerHTML='Stok komputer: <b style="font-size:22px">'+(c in sys?sys[c]:'belum diinput')+'</b>';$('#fQty').value=h?h.f:'';$('#fEd').value=h&&h.ed?h.ed.slice(0,7):'';$('#fGud').value=h&&h.g!=null?h.g:'';$('#fKel').value=h&&h.k?h.k:'';$('#fKet').value=h&&h.m?h.m:'';$('#form').style.display='block';lastW='';fw();calcClose();$('#fTgl').textContent='Tanggal SO: '+($('#tglSO').value||ymd())+' (ubah di bagian atas tab Scan)';$('#fQty').focus()}
 function onScan(t){const c=match(t);if(!c){if(newOn)return;const m=String(t).match(/\d{8,12}/);try{navigator.vibrate&&navigator.vibrate([60,40,60])}catch(e){}return showNew(m?m[0]:norm(t).slice(0,40),'')}try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}stopCam();showItem(c)}
 async function startCam(){if(qr)return;if(typeof Html5Qrcode==='undefined')return toast('Library scan belum termuat, cek internet');qr=new Html5Qrcode('reader');try{await qr.start({facingMode:'environment'},{fps:10,qrbox:{width:230,height:230}},onScan,()=>{})}catch(e){qr=null;toast('Kamera gagal ('+((e&&e.name)||String(e)).slice(0,40)+'). Pakai tombol Foto QR')}}
 $('#fImg').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{await stopCam();const h=new Html5Qrcode('reader');const t=await h.scanFile(f,false);try{h.clear()}catch(x){}onScan(t)}catch(x){toast('QR tidak terbaca, foto lebih dekat dan fokus')}};
@@ -645,7 +653,7 @@ document.addEventListener('touchstart',e=>{p2rY=e.touches[0]?e.touches[0].client
 document.addEventListener('touchmove',e=>{if(!e.touches||e.touches.length!==1)return;const dy=e.touches[0].clientY-p2rY;if(dy<=0||window.scrollY>0)return;
  let el=e.target;while(el&&el!==document.body&&el!==document.documentElement){if(el.scrollHeight>el.clientHeight+1&&/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollTop>0)return;el=el.parentElement}
  if(e.cancelable)e.preventDefault()},{passive:false});
-var APPV='v46';
+var APPV='v47';
 function doReload(){location.reload()}
 try{localStorage.removeItem('so_navmin');localStorage.removeItem('so_navhint')}catch(e){}
 $('#verInfo').textContent='Versi: '+APPV;
@@ -839,6 +847,27 @@ $('#gsSo').onclick=async()=>{if(!gsOk())return gStat('Isi URL Web App yang valid
  ks.forEach(c=>GQ.add(c));LS.s('so_gq',[...GQ]);gStat('Mengirim hasil SO...');await flushG(true)};
 $('#gsCopy').onclick=async()=>{const t=$('#gsCode');try{await navigator.clipboard.writeText(t.value);toast('Kode disalin')}catch(e){t.focus();t.select();try{document.execCommand('copy');toast('Kode disalin')}catch(x){toast('Tekan lama lalu Salin')}}};
 window.addEventListener('online',()=>flushG());setInterval(()=>flushG(),30000);setTimeout(()=>flushG(),2000);
+
+var calcE='';
+function calcEval(e){const t=e.match(/\d+|[+−×]/g)||[];while(t.length&&/^[+−×]$/.test(t[t.length-1]))t.pop();if(!t.length)return null;
+ let total=0,sign=1,prod=null,op=null;
+ for(const x of t){if(/^\d+$/.test(x)){const n=Number(x);prod=op==='×'&&prod!=null?prod*n:n;op=null}
+  else if(x==='×'){op='×'}
+  else{total+=sign*(prod||0);sign=x==='+'?1:-1;prod=null;op=null}}
+ return total+sign*(prod||0)}
+function calcView(){const v=calcEval(calcE);$('#calcExp').textContent=calcE?calcE.replace(/([+−×])/g,' $1 '):'0';
+ const bad=v==null||!isFinite(v)||v<0||!Number.isSafeInteger(v);
+ $('#calcRes').textContent=v==null?'= 0':bad?(v<0?'= '+v+' (stok tidak boleh minus)':'= tidak valid'):'= '+v;
+ $('#calcRes').style.color=bad&&v!=null?'var(--bad)':'';$('#calcOk').disabled=bad;$('#calcOk').textContent=bad?'Pakai hasil':'Pakai hasil: '+v}
+function calcClose(){const b=$('#calcBox');if(b)b.style.display='none';calcE=''}
+$('#bCalc').onclick=()=>{const b=$('#calcBox');if(b.style.display!=='none')return calcClose();calcE=$('#fQty').value!==''?String(Number($('#fQty').value)):'';b.style.display='block';calcView();b.scrollIntoView({block:'nearest'})};
+$('#calcPad').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.d!=null){const d=b.dataset.d,m=calcE.match(/\d+$/);if(calcE.length>=40)return;
+  if(m&&/^0+$/.test(m[0]))calcE=calcE.slice(0,-m[0].length)+(d==='00'?'0':d);else if(!m&&d==='00')calcE+='0';else calcE+=d}
+ else if(b.dataset.o){if(!calcE)return;calcE=/[+−×]$/.test(calcE)?calcE.slice(0,-1)+b.dataset.o:calcE+b.dataset.o}
+ else if(b.dataset.c==='C')calcE='';else if(b.dataset.c==='B')calcE=calcE.slice(0,-1);
+ calcView()};
+$('#calcOk').onclick=()=>{const v=calcEval(calcE);if(v==null||v<0||!Number.isSafeInteger(v))return;$('#fQty').value=String(v);fw();calcClose();toast('Stok fisik diisi: '+v)};
 
 $('#kbMode').onclick=()=>{const i=$('#manual'),n=i.inputMode==='numeric';i.inputMode=n?'text':'numeric';$('#kbMode').textContent=n?'123':'ABC';i.blur();i.focus()};
 applyLang();
