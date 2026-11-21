@@ -157,6 +157,35 @@ body.sakura #skCv{display:block}
 #sSys{white-space:pre-line}
 html,body{touch-action:pan-x pan-y;overscroll-behavior-y:contain}
 .big{font-size:18px;font-weight:700}
+
+[data-theme="sport"]{--bg:#fff;--card:#eceff1;--ink:#000;--mut:#4d4d4d;--line:#767677;--pri:#000;--onpri:#fff;--warn:#8a4b00;--bad:#d4001a;--ok:#007a3d;background:#000}
+[data-theme="sport"] body{font-family:"Helvetica Neue",Helvetica,Arial,"Segoe UI",system-ui,sans-serif;font-weight:500;background:#fff;min-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+[data-theme="sport"] header{background:#000;color:#fff;padding:14px 16px 12px}
+[data-theme="sport"] header h1{color:#fff;text-transform:uppercase;font-weight:900;font-style:italic;letter-spacing:-.01em;font-size:22px}
+[data-theme="sport"] header .sub{color:#c9c9c9;text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+[data-theme="sport"] .card{background:#eceff1;border:0;border-radius:0}
+[data-theme="sport"] h2{text-transform:uppercase;font-weight:900;letter-spacing:.03em;font-size:14px}
+[data-theme="sport"] label{color:#000;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+[data-theme="sport"] button,[data-theme="sport"] .btn{background:#000;color:#fff;border:1px solid #000;border-radius:0;min-height:48px;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.05em}
+[data-theme="sport"] button:not(.ghost):not(.sw):not(.vmic):not(.vmic2):not(.mic):not(#gFab):not(nav button):not(#calcPad button)::after{content:" \2192"}
+[data-theme="sport"] button:active,[data-theme="sport"] .btn:active{background:#fff;color:#000}
+[data-theme="sport"] button.ghost,[data-theme="sport"] .btn.ghost{background:#fff;color:#000;border:1px solid #000}
+[data-theme="sport"] button.ghost:active{background:#000;color:#fff}
+[data-theme="sport"] input,[data-theme="sport"] select{background:#fff;border:1px solid #767677;border-radius:0;color:#000}
+[data-theme="sport"] input:focus,[data-theme="sport"] select:focus{outline:2px solid #000;outline-offset:0;border-color:#000}
+[data-theme="sport"] nav{background:#fff;border-top:0;border-bottom:1px solid #d1d5d8}
+[data-theme="sport"] nav button{background:transparent;color:#767677;border:0;font-size:12px;font-weight:800}
+[data-theme="sport"] nav button.on{background:transparent;color:#000;box-shadow:inset 0 -3px 0 #000}
+[data-theme="sport"] .item{border-bottom:1px solid #c9ced1}
+[data-theme="sport"] .item b{text-transform:uppercase;letter-spacing:.01em}
+[data-theme="sport"] .tag{border-radius:0;border:1px solid currentColor;font-weight:800;text-transform:uppercase;font-size:11px;letter-spacing:.04em}
+[data-theme="sport"] .warn,[data-theme="sport"] .prev,[data-theme="sport"] .komp,[data-theme="sport"] #sRows,[data-theme="sport"] #reader,[data-theme="sport"] .sw{border-radius:0}
+[data-theme="sport"] #toast{background:#000;color:#fff;border-radius:0}
+[data-theme="sport"] #calcBox{border:1px solid #000!important;border-radius:0!important}
+
+.row:has(>div>.row>#fQty)>div{min-width:0}
+.row:has(>div>.row>#fQty)>div:last-child{flex:1.45}
+#fQty,#fEd{min-width:0}
 </style></head><body>
 <header><h1>Stok Opname Farmasi</h1><div class="sub" id="hdr"></div></header>
 <nav><button data-t="data" class="on">Data</button><button data-t="scan">Scan</button><button data-t="list">Daftar</button><button data-t="exp">Export</button></nav>
@@ -207,7 +236,7 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-y:contain}
  <div class="card"><div id="reader"></div>
   <div class="row" style="margin-top:8px"><button id="bCam">Mulai kamera</button><button class="ghost" id="bStop">Stop</button></div>
   <label class="btn ghost full" style="text-align:center;margin-top:8px">Foto QR (pakai kamera HP)<input id="fImg" type="file" accept="image/*" capture="environment" hidden></label>
-  <label>Atau ketik / tempel Kode Material</label>
+  <label>Atau cari nama / kode material</label>
   <div class="row"><input id="manual" inputmode="text" autocomplete="off" autocapitalize="none" placeholder="Nama obat / kode / 4 angka akhir"><button class="ghost" id="kbMode" type="button" aria-label="Ganti keyboard" style="flex:0 0 56px;padding:0">123</button><button class="ghost vmic2" id="vManual" type="button"><i class="ic"></i></button><button id="bFind" style="flex:0 0 90px">Cari</button></div>
   <div id="mCand"></div></div>
  <div class="card" id="newCard" style="display:none"><h2>Obat belum ada di database</h2>
@@ -504,7 +533,7 @@ function bubSpawn(first){if(!bubLayer)return;const b=document.createElement('div
 function bubPop(b){if(b.classList.contains('pop'))return;const r=b.getBoundingClientRect();b.style.left=r.left+'px';b.style.top=r.top+'px';b.style.bottom='auto';b.classList.add('pop');bubSound();try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}}
 function bubStart(){if(bubLayer)return;bubLayer=document.createElement('div');bubLayer.id='bubLayer';document.body.appendChild(bubLayer);for(let i=0;i<9;i++)bubSpawn(true);bubTimer=setInterval(()=>{if(bubLayer&&bubLayer.children.length<12)bubSpawn(false)},1500)}
 function bubStop(){clearInterval(bubTimer);bubTimer=null;if(bubLayer){bubLayer.remove();bubLayer=null}}
-const TH=[['hangat','Hangat','#b4501f','#f5efe4','#1f180d'],['teal','Teal klinis','#0e7c7b','#eef5f4','#173331'],['biru','Biru RS','#1d5fbf','#eef3fa','#16243d'],['hijau','Hijau apotek','#2e7d32','#eff5ec','#1d3320'],['gelap','Gelap malam','#7aa2ff','#10151f','#e6ecf7'],['kontras','Kontras tinggi','#c2410c','#fffaf0','#1a1200'],['bw','Hitam putih','#111111','#f8f8f6','#0a0a0a'],['neraka','Neraka','#ff5a1f','#160706','#fff0e6'],['brutal','Brutal kuning','#ffd60a','#fbf4e6','#111111'],['girly','Pink girly','#d6336f','#ffe4f0','#4a1330'],['gumroad','Gumroad','#ff90e8','#f4f4f0','#000000'],['bubble','Bubble','#1c78b8','#dff3ff','#0d2b3e']];
+const TH=[['hangat','Hangat','#b4501f','#f5efe4','#1f180d'],['teal','Teal klinis','#0e7c7b','#eef5f4','#173331'],['biru','Biru RS','#1d5fbf','#eef3fa','#16243d'],['hijau','Hijau apotek','#2e7d32','#eff5ec','#1d3320'],['gelap','Gelap malam','#7aa2ff','#10151f','#e6ecf7'],['kontras','Kontras tinggi','#c2410c','#fffaf0','#1a1200'],['bw','Hitam putih','#111111','#f8f8f6','#0a0a0a'],['sport','Sport (gaya adidas)','#ffffff','#000000','#ffffff'],['neraka','Neraka','#ff5a1f','#160706','#fff0e6'],['brutal','Brutal kuning','#ffd60a','#fbf4e6','#111111'],['girly','Pink girly','#d6336f','#ffe4f0','#4a1330'],['gumroad','Gumroad','#ff90e8','#f4f4f0','#000000'],['bubble','Bubble','#1c78b8','#dff3ff','#0d2b3e']];
 function applyTheme(k){if(!TH.some(x=>x[0]===k))k='hangat';document.documentElement.setAttribute('data-theme',k);document.querySelectorAll('.sw').forEach(b=>b.classList.toggle('on',b.dataset.k===k));const t=TH.find(x=>x[0]===k),m=document.querySelector('meta[name=theme-color]');if(m)m.content=t[3];if(k==='bubble')bubStart();else bubStop();gApply(k);skApply(k)}
 $('#themes').innerHTML=TH.map(t=>'<button type="button" class="sw" data-k="'+t[0]+'" style="background:'+t[3]+';color:'+t[4]+';border:1px solid '+t[2]+'"><i style="background:'+t[2]+'"></i>'+t[1]+'</button>').join('');
 $('#themes').onclick=e=>{const b=e.target.closest('.sw');if(!b)return;LS.s('so_theme',b.dataset.k);applyTheme(b.dataset.k)};
@@ -658,7 +687,7 @@ document.addEventListener('touchstart',e=>{p2rY=e.touches[0]?e.touches[0].client
 document.addEventListener('touchmove',e=>{if(!e.touches||e.touches.length!==1)return;const dy=e.touches[0].clientY-p2rY;if(dy<=0||window.scrollY>0)return;
  let el=e.target;while(el&&el!==document.body&&el!==document.documentElement){if(el.scrollHeight>el.clientHeight+1&&/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollTop>0)return;el=el.parentElement}
  if(e.cancelable)e.preventDefault()},{passive:false});
-var APPV='v48';
+var APPV='v49';
 function doReload(){location.reload()}
 try{localStorage.removeItem('so_navmin');localStorage.removeItem('so_navhint')}catch(e){}
 $('#verInfo').textContent='Versi: '+APPV;
