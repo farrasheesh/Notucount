@@ -186,8 +186,12 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-y:contain}
 .row:has(>div>.row>#fQty)>div{min-width:0}
 .row:has(>div>.row>#fQty)>div:last-child{flex:1.45}
 #fQty,#fEd{min-width:0}
+
+header{position:relative}
+#fsBtn{position:absolute;right:12px;top:10px;width:44px;min-height:44px;padding:0;align-items:center;justify-content:center}
+[data-theme="sport"] #fsBtn{background:transparent;color:#fff;border-color:#fff}
 </style></head><body>
-<header><h1>Stok Opname Farmasi</h1><div class="sub" id="hdr"></div></header>
+<header><h1>Stok Opname Farmasi</h1><div class="sub" id="hdr"></div><button class="ghost" id="fsBtn" type="button" aria-label="Layar penuh" style="display:none"></button></header>
 <nav><button data-t="data" class="on">Data</button><button data-t="scan">Scan</button><button data-t="list">Daftar</button><button data-t="exp">Export</button></nav>
 <main>
 <section class="tab on" id="t-data">
@@ -218,6 +222,10 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-y:contain}
  <label>Stok komputer</label><input id="sQty" type="number" inputmode="numeric" min="0">
  <div class="prev" id="sPrev">Isi Kode Material dulu.</div>
  <button class="full" id="sSave" style="margin-top:10px">Simpan stok</button></details>
+<div class="card" id="fsCard"><h2>Layar penuh</h2><div class="m">Sembunyikan bilah alamat dan tombol Back/Home bawaan HP supaya aplikasi memenuhi layar. Geser dari tepi layar untuk memunculkannya sebentar.</div>
+  <button class="full" id="fsGo" type="button" style="margin-top:8px">Masuk layar penuh</button>
+  <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="fsAuto" type="checkbox" style="width:auto;min-height:0"> Otomatis layar penuh saat layar pertama kali disentuh</label>
+  <div class="stat" id="fsInfo"></div></div>
  <div class="card" id="pwaCard"><h2>Pasang sebagai aplikasi</h2><div class="m">Pasang di layar utama biar terbuka layar penuh tanpa alamat web, kayak aplikasi biasa.</div>
  <button class="full" id="pwaBtn" type="button" style="display:none;margin-top:8px">Pasang di layar utama</button>
  <div class="stat" id="pwaInfo">Kalau tombol belum muncul: buka menu browser (titik tiga), pilih "Pasang aplikasi" atau "Tambahkan ke layar utama". Di iPhone: Bagikan, lalu "Tambah ke Layar Utama".</div></div>
@@ -687,7 +695,7 @@ document.addEventListener('touchstart',e=>{p2rY=e.touches[0]?e.touches[0].client
 document.addEventListener('touchmove',e=>{if(!e.touches||e.touches.length!==1)return;const dy=e.touches[0].clientY-p2rY;if(dy<=0||window.scrollY>0)return;
  let el=e.target;while(el&&el!==document.body&&el!==document.documentElement){if(el.scrollHeight>el.clientHeight+1&&/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollTop>0)return;el=el.parentElement}
  if(e.cancelable)e.preventDefault()},{passive:false});
-var APPV='v49';
+var APPV='v50';
 function doReload(){location.reload()}
 try{localStorage.removeItem('so_navmin');localStorage.removeItem('so_navhint')}catch(e){}
 $('#verInfo').textContent='Versi: '+APPV;
@@ -934,6 +942,27 @@ $('#fRes').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)
   st('Impor selesai: '+masuk.length+' hasil hitung masuk'+(mode==='skip'&&ada.length?', '+ada.length+' dilewati (sudah ada hasil)':'')+(notDb.length?', '+notDb.length+' kode tidak ada di database dilewati'+(notDb.length<=5?' ('+notDb.join(', ')+')':''):'')+(tanpaFisik?', '+tanpaFisik+' baris tanpa Fisik dilewati':'')+'.');
   toast('Impor: '+masuk.length+' hasil hitung masuk')
  }catch(x){st('File tidak bisa dibaca.')}};
+
+const FSI={on:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+ off:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>'};
+const fsEl=document.documentElement,fsCan=!!(fsEl.requestFullscreen||fsEl.webkitRequestFullscreen);
+const fsOn=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+async function fsToggle(){
+ if(!fsCan)return toast('Browser ini tidak bisa layar penuh. Di iPhone: Bagikan > Tambah ke Layar Utama.');
+ try{if(fsOn())await(document.exitFullscreen||document.webkitExitFullscreen).call(document);
+  else await(fsEl.requestFullscreen||fsEl.webkitRequestFullscreen).call(fsEl,{navigationUI:'hide'})}
+ catch(e){toast('Layar penuh ditolak browser')}}
+function fsUi(){const on=fsOn();$('#fsBtn').innerHTML=on?FSI.off:FSI.on;$('#fsBtn').setAttribute('aria-label',on?'Keluar layar penuh':'Layar penuh');
+ $('#fsGo').textContent=on?'Keluar layar penuh':'Masuk layar penuh';
+ $('#fsInfo').textContent=fsCan?(on?'Layar penuh aktif.':'Layar penuh belum aktif.'):'Browser ini tidak mendukung layar penuh dari halaman web (umumnya iPhone). Pasang ke layar utama lewat Bagikan > Tambah ke Layar Utama.'}
+$('#fsBtn').style.display=fsCan?'flex':'none';
+$('#fsBtn').onclick=fsToggle;$('#fsGo').onclick=fsToggle;
+$('#fsAuto').checked=!!LS.g('so_fsauto',false);
+$('#fsAuto').onchange=()=>{LS.s('so_fsauto',$('#fsAuto').checked);if($('#fsAuto').checked&&!fsOn())fsToggle()};
+document.addEventListener('fullscreenchange',fsUi);document.addEventListener('webkitfullscreenchange',fsUi);
+if(LS.g('so_fsauto',false)&&fsCan){const h=()=>{document.removeEventListener('click',h,true);document.removeEventListener('touchend',h,true);if(!fsOn())fsToggle()};
+ document.addEventListener('click',h,true);document.addEventListener('touchend',h,true)}
+fsUi();
 
 $('#kbMode').onclick=()=>{const i=$('#manual'),n=i.inputMode==='numeric';i.inputMode=n?'text':'numeric';$('#kbMode').textContent=n?'123':'ABC';i.blur();i.focus()};
 applyLang();
