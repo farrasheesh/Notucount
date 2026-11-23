@@ -193,6 +193,7 @@ header{position:relative}
 </style></head><body>
 <header><h1>Stok Opname Farmasi</h1><div class="sub" id="hdr"></div><button class="ghost" id="fsBtn" type="button" aria-label="Layar penuh" style="display:none"></button></header>
 <nav><button data-t="data" class="on">Data</button><button data-t="scan">Scan</button><button data-t="list">Daftar</button><button data-t="exp">Export</button></nav>
+<div id="staleBar" style="display:none;background:#fff4d6;color:#5c3b00;border-bottom:2px solid #d98a00;padding:10px 16px;font-size:13px;line-height:1.45"><b>Tim memulai SO baru.</b> Hasil di HP ini tetap aman, tapi pengiriman ke tim dijeda supaya tidak menimpa data SO baru.<button id="staleBtn" type="button" class="full" style="margin-top:8px;min-height:40px">Ambil SO baru (cadangan Excel dibuat dulu)</button></div>
 <main>
 <section class="tab on" id="t-data">
  <div class="card"><h2>1. Database obat</h2>
@@ -285,7 +286,11 @@ header{position:relative}
  <div class="card"><h2>Export hasil SO</h2><div class="m">Kolom: Tanggal SO, Kode Material, Material Description, Rak, Stok Komp, Fisik, Gudang, Selisih, Expired Date, Ket. (catatan, kosong kalau tidak diisi), Kelengkapan Label.</div>
  <label>Rak yang di-export</label><select id="rakExp"><option value="">Semua rak</option></select>
  <label>Status</label><select id="stExp"><option value="">Semua</option><option value="h">Sudah dihitung</option><option value="b">Belum dihitung</option><option value="s">Selisih</option><option value="ok">Sesuai</option><option value="w">Melebihi batas</option></select>
- <button class="full" id="bExp" style="margin-top:10px">Export ke Excel</button><div class="stat" id="sExp"></div></div>
+ <div class="row" style="margin-top:10px"><button id="bExp">Export ke Excel</button><button class="ghost" id="bSend" type="button">Send ke Supabase</button></div><div class="stat" id="sExp"></div>
+ <details style="margin-top:8px"><summary><b>Siapkan tabel Supabase (sekali saja)</b></summary>
+ <div class="m" style="margin:6px 0">Send mengirim baris yang sudah dihitung ke tabel <b>hasil_so_export</b> dengan kolom yang sama seperti file export. Rak dan Status di atas ikut berlaku. Buka Supabase &gt; SQL Editor &gt; New query, tempel kode di bawah, lalu Run.</div>
+ <textarea id="sqlCode" readonly rows="10" style="width:100%;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"></textarea>
+ <button id="sqlCopy" class="full" type="button" style="margin-top:8px">Salin SQL</button></details></div>
  <div class="card"><h2>Sinkron tim (Supabase)</h2><div class="m">Hasil hitung dikirim ke server bersama tiap Simpan, dan hasil HP lain ditarik ke sini. Butuh internet; kalau offline, antre dulu.</div>
  <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="sbOn" type="checkbox" style="width:auto;min-height:0"> Sinkron otomatis</label>
  <div class="row" style="margin-top:8px"><button id="sbPull" class="ghost">Tarik hasil tim</button><button id="sbPush" class="ghost">Kirim semua</button></div>
@@ -367,7 +372,8 @@ $('#fSys').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)
   if(!r||!Object.keys(r.s).length)return toast('Kolom kode dan stok tidak ketemu. Pastikan ada kolom Kode (Material) dan Stok.');
   if(r.guess&&!confirm('Judul kolom tidak ketemu. Pakai tebakan: kolom '+XLSX.utils.encode_col(r.hd.ci)+' = kode, kolom '+XLSX.utils.encode_col(r.hd.qi)+' = stok. Lanjut?'))return;
   const keep=$('#sysKeep').checked;
-  if(!keep&&Object.keys(so).length&&!confirm('Mulai SO baru? Hasil hitung lama akan dihapus.'))return;
+  if(!keep&&Object.keys(so).length&&!confirm('Mulai SO baru? Hasil hitung lama akan dihapus (cadangan Excel dibuat dulu).'))return;
+  if(!keep&&!okBackup('cadangan_sebelum_SO_baru'))return;
   const ks=Object.keys(r.s),un=ks.filter(c=>!db[c]),mt=ks.length-un.length;
   sys=r.s;LS.s('so_sys',sys);
   if(!keep){so={};LS.s('so_res',so);since=Date.now();LS.s('so_since',since);Q.clear();qSave()}
@@ -380,7 +386,7 @@ $('#bTpl').onclick=async()=>{const rk=$('#rakForm').value;const rows=[['Kode Mat
  if(rows.length===1)rows.push(['1100002068','CONTOH OBAT','1',10]);
  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:14},{wch:44},{wch:6},{wch:10}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stok');
  await save('form_stok_komputer'+(rk?'_rak'+rk:'')+'.xlsx',wb);if(Object.keys(db).length)toast('Form berisi '+(rows.length-1)+' obat')};
-$('#bReset').onclick=()=>{if(confirm('Hapus semua hasil hitung di HP ini?')){so={};LS.s('so_res',so);since=Date.now();LS.s('so_since',since);Q.clear();qSave();stats();render()}};
+$('#bReset').onclick=()=>{if(confirm('Hapus semua hasil hitung di HP ini? Cadangan Excel dibuat dulu.')&&okBackup('cadangan_sebelum_hapus')){so={};LS.s('so_res',so);since=Date.now();LS.s('so_since',since);Q.clear();qSave();stats();render()}};
 async function save(name,wb){try{XLSX.writeFile(wb,name);toast('File disimpan: '+name)}catch(e){toast('Gagal export: '+(e.message||e))}}
 function match(t){t=norm(t);if(db[t])return t;const m=t.match(/\d{8,12}/g)||[];for(const x of m)if(db[x])return x;return null}
 function showItem(c){cur=c;const it=db[c],h=so[c];$('#fName').textContent=it.n||c;$('#fMeta').textContent=`${c} · Rak ${it.r||'-'}`;$('#fKomp').innerHTML='Stok komputer: <b style="font-size:22px">'+(c in sys?sys[c]:'belum diinput')+'</b>';$('#fQty').value=h?h.f:'';$('#fEd').value=h&&h.ed?h.ed.slice(0,7):'';$('#fGud').value=h&&h.g!=null?h.g:'';$('#fKel').value=h&&h.k?h.k:'';$('#fKet').value=h&&h.m?h.m:'';$('#form').style.display='block';lastW='';fw();calcClose();$('#fTgl').textContent='Tanggal SO: '+($('#tglSO').value||ymd())+' (ubah di bagian atas tab Scan)';$('#fQty').focus()}
@@ -406,10 +412,12 @@ function render(){const q=$('#q').value.toLowerCase(),rk=$('#fRak').value,st=$('
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 ['q','fRak','fSt'].forEach(i=>$('#'+i).oninput=render);
 $('#list').onclick=e=>{const d=e.target.closest('.item');if(!d)return;tab('scan');stopCam();showItem(d.dataset.c)};
-$('#bExp').onclick=async()=>{if(!Object.keys(db).length)return toast('Database kosong');
- const rows=[['Tanggal SO','Kode Material','Material Description','Rak','Stok Komp','Fisik','Gudang','Selisih','Expired Date','Ket.','Kelengkapan Label']];
- const rk=$('#rakExp').value;const codes=[...new Set([...Object.keys(db),...Object.keys(sys)])].filter(c=>!rk||(db[c]&&db[c].r===rk)).filter(c=>{const st=$('#stExp').value;if(!st)return true;const x=so[c],k=sys[c]||0;return st==='h'?!!x:st==='b'?!x:st==='ok'?!!(x&&x.f===k):st==='w'?!!(x&&wchk(c,x.f)):!!(x&&x.f!==k)});const STN={h:'sudah-dihitung',b:'belum-dihitung',s:'selisih',ok:'sesuai',w:'melebihi-batas'};
+function exportRows(){const rows=[['Tanggal SO','Kode Material','Material Description','Rak','Stok Komp','Fisik','Gudang','Selisih','Expired Date','Ket.','Kelengkapan Label']];
+ const rk=$('#rakExp').value;const codes=[...new Set([...Object.keys(db),...Object.keys(sys)])].filter(c=>!rk||(db[c]&&db[c].r===rk)).filter(c=>{const st=$('#stExp').value;if(!st)return true;const x=so[c],k=sys[c]||0;return st==='h'?!!x:st==='b'?!x:st==='ok'?!!(x&&x.f===k):st==='w'?!!(x&&wchk(c,x.f)):!!(x&&x.f!==k)});
  codes.forEach(c=>{const it=db[c]||{n:'(tidak ada di database)',r:''},h=so[c],k=sys[c]||0;rows.push([h?dateOf(h):'',c,it.n,it.r,k,h?h.f:'',h&&h.g!=null?h.g:'','',h&&h.ed?h.ed:'',h&&h.m?h.m:'',h&&h.k?h.k:''])});
+ return rows}
+$('#bExp').onclick=async()=>{if(!Object.keys(db).length)return toast('Database kosong');
+ const rows=exportRows();const rk=$('#rakExp').value;const STN={h:'sudah-dihitung',b:'belum-dihitung',s:'selisih',ok:'sesuai',w:'melebihi-batas'};
  const ws=XLSX.utils.aoa_to_sheet(rows);for(let i=1;i<rows.length;i++){const r=i+1,e=rows[i][5],dd=rows[i][4],v=(e===''||e==null)?'':e-dd;ws['H'+r]={t:v===''?'s':'n',v:v,f:'IF(F'+r+'="","",F'+r+'-E'+r+')'}}
  ws['!cols']=[{wch:12},{wch:14},{wch:44},{wch:6},{wch:10},{wch:8},{wch:8},{wch:9},{wch:12},{wch:16},{wch:16}];
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Hasil SO');await save('hasil_SO_'+(rk?'rak'+rk+'_':'')+($('#stExp').value?STN[$('#stExp').value]+'_':'')+new Date().toISOString().slice(0,10)+'.xlsx',wb)};
@@ -436,9 +444,10 @@ const SBH={apikey:SK,Authorization:'Bearer '+SK,'Content-Type':'application/json
 let Q=new Set(LS.g('so_q',[])),SYNC=LS.g('so_sync',{on:true}),since=LS.g('so_since',0),flushing=false;
 const qSave=()=>LS.s('so_q',[...Q]),sbStat=m=>{$('#sbStat').textContent=m};
 const sbRow=c=>{const it=db[c]||{},h=so[c];return{kode:c,nama:it.n||null,rak:it.r||null,stok_komputer:c in sys?sys[c]:null,stok_fisik:h.f,ed:h.ed||null,updated_at:new Date(h.t||Date.now()).toISOString(),gudang:h.g==null?null:h.g,kelengkapan:h.k||null,ket:h.m||null,sesi:SESI||null}};
-async function flush(){if(!SYNC.on||flushing||!Q.size||!navigator.onLine)return;flushing=true;
+async function flush(){if(!SYNC.on||flushing||!Q.size||!navigator.onLine)return;if(isStale())return sbStat('Pengiriman ke tim dijeda: tim memulai SO baru. Ambil SO baru lewat banner di atas.');flushing=true;
  const cs=[...Q].filter(c=>so[c]);let ok=0;
- try{for(let i=0;i<cs.length;i+=500){const part=cs.slice(i,i+500);
+ try{if(!(await sesiOk())){sbStat('Pengiriman ke tim dijeda: tim memulai SO baru. Ambil SO baru lewat banner di atas.');return}
+  for(let i=0;i<cs.length;i+=500){const part=cs.slice(i,i+500);
    const r=await fetch(SB+'/rest/v1/so_hasil?on_conflict=kode',{method:'POST',headers:{...SBH,Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(part.map(sbRow))});
    if(!r.ok)throw new Error(r.status+' '+(await r.text()).slice(0,80));part.forEach(c=>Q.delete(c));ok+=part.length}
   [...Q].forEach(c=>{if(!so[c])Q.delete(c)});sbStat('Terkirim '+ok+' baris. Antrean: '+Q.size)}
@@ -454,7 +463,7 @@ $('#sbPull').onclick=pull;
 $('#sbPush').onclick=()=>{Object.keys(so).forEach(c=>Q.add(c));qSave();if(!SYNC.on)return sbStat('Aktifkan Sinkron otomatis dulu.');flush()};
 $('#sbClear').onclick=async()=>{if(!confirm('Hapus SEMUA hasil tim di server? Ini mulai SO baru untuk semua orang.'))return;if(!confirm('Yakin? Tidak bisa dibatalkan.'))return;
  try{const r=await fetch(SB+'/rest/v1/so_hasil?kode=neq.__none__',{method:'DELETE',headers:{...SBH,Prefer:'return=minimal'}});if(!r.ok)throw new Error(r.status);Q.clear();qSave();since=Date.now();LS.s('so_since',since);sbStat('Data tim di server dikosongkan.')}catch(e){sbStat('Gagal: '+(e.message||e))}};
-let SESI=LS.g('so_sesi',''),skipS='';
+let SESI=LS.g('so_sesi',''),skipS=LS.g('so_skip',''),staleS=LS.g('so_stale','');
 async function sbReq(p,o){const r=await fetch(SB+'/rest/v1/'+p,o);if(!r.ok)throw new Error(r.status+' '+(await r.text()).slice(0,80));return r}
 async function sbAll(t,cols,ord){let out=[],off=0;for(;;){const a=await (await sbReq(t+'?select='+cols+'&order='+ord+'&limit=1000&offset='+off,{headers:SBH})).json();out=out.concat(a);if(a.length<1000)break;off+=1000}return out}
 async function sbUp(t,rows,conf){for(let i=0;i<rows.length;i+=500)await sbReq(t+'?on_conflict='+(conf||'kode'),{method:'POST',headers:{...SBH,Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(rows.slice(i,i+500))})}
@@ -464,17 +473,22 @@ async function shareMaster(){if(!navigator.onLine)return sbStat('Offline, tidak 
 async function shareStok(){if(!navigator.onLine)return sbStat('Offline, tidak bisa bagikan.');
  if(!Object.keys(sys).length)return sbStat('Belum ada stok komputer.');
  if(!confirm('Bagikan stok komputer = MULAI SO BARU untuk semua HP. Hasil hitung tim di server dihapus. Lanjut?'))return;
+ if(!okBackup('cadangan_sebelum_SO_baru'))return;
  sbStat('Membagikan stok komputer...');
  try{const ses=String(Date.now());await sbDelAll('so_hasil');await sbDelAll('so_stok');await sbUp('so_stok',Object.keys(sys).map(c=>({kode:c,stok:sys[c]})));await sbUp('so_meta',[{id:1,sesi:ses}],'id');
-  SESI=ses;LS.s('so_sesi',SESI);so={};LS.s('so_res',so);Q.clear();qSave();stats();render();sbStat('Stok komputer dibagikan. SO baru dimulai untuk semua HP.')}catch(e){sbStat('Gagal bagikan stok: '+(e.message||e))}}
+  SESI=ses;LS.s('so_sesi',SESI);skipS='';LS.s('so_skip','');staleSet('');so={};LS.s('so_res',so);Q.clear();qSave();stats();render();sbStat('Stok komputer dibagikan. SO baru dimulai untuk semua HP.')}catch(e){sbStat('Gagal bagikan stok: '+(e.message||e))}}
 async function pullBase(){const m=await sbAll('so_master','kode,nama,rak','kode'),s=await sbAll('so_stok','kode,stok','kode');
  if(m.length){const d={};m.forEach(x=>{d[x.kode]={n:x.nama||'',r:x.rak||''}});db=d;LS.s('so_db',db)}
  const y={};s.forEach(x=>{y[x.kode]=Number(x.stok)});sys=y;LS.s('so_sys',sys);fillRak();stats();render()}
 async function chkSesi(auto){try{const a=await (await sbReq('so_meta?select=sesi&id=eq.1',{headers:SBH})).json();const s=(a[0]&&a[0].sesi)||'';
-  if(!s||s===SESI)return 0;if(auto&&s===skipS)return -1;
-  if(!confirm('Ada SO baru dari tim. Ambil data baru? Hasil hitung di HP ini (termasuk yang belum terkirim) akan direset.')){skipS=s;return -1}
-  sbStat('Mengambil data SO baru...');await pullBase();SESI=s;LS.s('so_sesi',SESI);so={};LS.s('so_res',so);Q.clear();qSave();stats();render();sbStat('SO baru diambil dari tim.');return 1}
- catch(e){if(!auto)sbStat('Gagal cek SO baru: '+(e.message||e));return -1}}
+  if(!s||s===SESI){skipS='';LS.s('so_skip','');staleSet('');return 0}
+  staleSet(s);
+  if(auto==='silent')return -1;
+  if(auto===true&&s===skipS)return -1;
+  if(!confirm('Ada SO baru dari tim. Ambil data baru?\n\nHasil hitung di HP ini (termasuk yang belum terkirim) dicadangkan ke Excel dulu, lalu direset.\n\nKalau Cancel: hasil di HP ini tetap aman, tapi pengiriman ke tim dijeda.')){skipS=s;LS.s('so_skip',s);return -1}
+  if(!okBackup('cadangan_sebelum_SO_baru'))return -1;
+  sbStat('Mengambil data SO baru...');await pullBase();SESI=s;LS.s('so_sesi',SESI);so={};LS.s('so_res',so);Q.clear();qSave();skipS='';LS.s('so_skip','');staleSet('');stats();render();sbStat('SO baru diambil dari tim.');return 1}
+ catch(e){if(auto===false)sbStat('Gagal cek SO baru: '+(e.message||e));return -1}}
 $('#sbShareDb').onclick=()=>{if(!Object.keys(db).length)return sbStat('Database kosong.');if(confirm('Bagikan database obat ini ke semua HP tim? Database tim diganti.'))shareMaster()};
 $('#sbShareStok').onclick=shareStok;
 $('#sbBase').onclick=async()=>{const r=await chkSesi(false);if(r!==0)return;if(confirm('Perbarui database obat dan stok komputer dari tim? Data di HP ini diganti.')){try{await pullBase();sbStat('Data dari tim diambil.')}catch(e){sbStat('Gagal: '+(e.message||e))}}};
@@ -695,7 +709,7 @@ document.addEventListener('touchstart',e=>{p2rY=e.touches[0]?e.touches[0].client
 document.addEventListener('touchmove',e=>{if(!e.touches||e.touches.length!==1)return;const dy=e.touches[0].clientY-p2rY;if(dy<=0||window.scrollY>0)return;
  let el=e.target;while(el&&el!==document.body&&el!==document.documentElement){if(el.scrollHeight>el.clientHeight+1&&/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollTop>0)return;el=el.parentElement}
  if(e.cancelable)e.preventDefault()},{passive:false});
-var APPV='v50';
+var APPV='v52';
 function doReload(){location.reload()}
 try{localStorage.removeItem('so_navmin');localStorage.removeItem('so_navhint')}catch(e){}
 $('#verInfo').textContent='Versi: '+APPV;
@@ -963,6 +977,64 @@ document.addEventListener('fullscreenchange',fsUi);document.addEventListener('we
 if(LS.g('so_fsauto',false)&&fsCan){const h=()=>{document.removeEventListener('click',h,true);document.removeEventListener('touchend',h,true);if(!fsOn())fsToggle()};
  document.addEventListener('click',h,true);document.addEventListener('touchend',h,true)}
 fsUi();
+
+async function sesiOk(){try{const a=await (await sbReq('so_meta?select=sesi&id=eq.1',{headers:SBH})).json();const x=(a[0]&&a[0].sesi)||'';if(x&&x!==SESI){staleSet(x);return false}return true}catch(e){return true}}
+function isStale(){return !!staleS&&staleS!==SESI}
+function staleUi(){const b=$('#staleBar');if(b)b.style.display=isStale()?'block':'none'}
+function staleSet(v){staleS=v||'';LS.s('so_stale',staleS);staleUi()}
+function backupSO(tag){try{const ks=Object.keys(so);if(!ks.length)return true;
+ const rows=[['Tanggal SO','Kode Material','Material Description','Rak','Stok Komp','Fisik','Gudang','Selisih','Expired Date','Ket.','Kelengkapan Label','Waktu Input']];
+ ks.forEach(c=>rows.push(gsRowSo(c)));
+ const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:12},{wch:14},{wch:44},{wch:6},{wch:10},{wch:8},{wch:8},{wch:9},{wch:12},{wch:16},{wch:16},{wch:17}];
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Hasil SO');const d=new Date(),nm=tag+'_'+ymd(d)+'_'+pad2(d.getHours())+pad2(d.getMinutes())+'.xlsx';
+ XLSX.writeFile(wb,nm);toast('Cadangan tersimpan: '+nm);return true}catch(e){return false}}
+function okBackup(tag){if(!Object.keys(so).length)return true;if(backupSO(tag))return true;return confirm('Cadangan Excel gagal dibuat. Tetap lanjut dan reset hasil hitung di HP ini?')}
+$('#staleBtn').onclick=()=>chkSesi(false);
+setInterval(()=>{if(SYNC.on&&navigator.onLine&&!document.hidden)chkSesi('silent')},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SYNC.on&&navigator.onLine)chkSesi('silent')});
+staleUi();
+
+const SQLX=String.raw`-- Jalankan sekali di Supabase: SQL Editor > New query > Run
+create table if not exists public.hasil_so_export (
+  tanggal_so text not null,
+  kode_material text not null,
+  material_description text,
+  rak text,
+  stok_komp numeric,
+  fisik numeric,
+  gudang numeric,
+  selisih numeric,
+  expired_date text,
+  ket text,
+  kelengkapan_label text,
+  updated_at timestamptz not null default now(),
+  primary key (tanggal_so, kode_material)
+);
+alter table public.hasil_so_export enable row level security;
+drop policy if exists so_export_select on public.hasil_so_export;
+drop policy if exists so_export_insert on public.hasil_so_export;
+drop policy if exists so_export_update on public.hasil_so_export;
+create policy so_export_select on public.hasil_so_export for select to anon using (true);
+create policy so_export_insert on public.hasil_so_export for insert to anon with check (true);
+create policy so_export_update on public.hasil_so_export for update to anon using (true) with check (true);
+`;
+$('#sqlCode').value=SQLX;
+$('#sqlCopy').onclick=async()=>{const t=$('#sqlCode');try{await navigator.clipboard.writeText(t.value);toast('SQL disalin')}catch(e){t.focus();t.select();try{document.execCommand('copy');toast('SQL disalin')}catch(x){toast('Tekan lama lalu Salin')}}};
+const sendErr=e=>{const m=String(e&&e.message||e);
+ return /404|PGRST205|schema cache|does not exist/i.test(m)?'Tabel hasil_so_export belum ada. Jalankan SQL di bagian "Siapkan tabel Supabase" di bawah.'
+  :/401|403|42501|row-level|policy/i.test(m)?'Ditolak server (izin/policy). Jalankan SQL di bagian "Siapkan tabel Supabase" di bawah.'
+  :/PGRST204|column/i.test(m)?'Kolom tabel tidak cocok. Jalankan ulang SQL di bagian "Siapkan tabel Supabase".'
+  :'Gagal kirim: '+m};
+$('#bSend').onclick=async()=>{const st=m=>{$('#sExp').textContent=m},btn=$('#bSend');
+ if(!Object.keys(db).length)return st('Database kosong.');
+ if(!navigator.onLine)return st('Offline, tidak bisa kirim.');
+ const src=exportRows().slice(1).filter(r=>r[5]!==''&&r[5]!=null);
+ if(!src.length)return st('Tidak ada hasil hitung untuk dikirim (sesuai filter Rak dan Status di atas).');
+ const now=new Date().toISOString(),rows=src.map(r=>({tanggal_so:r[0],kode_material:r[1],material_description:r[2]||null,rak:r[3]||null,stok_komp:r[4],fisik:r[5],gudang:r[6]===''?null:r[6],selisih:r[5]-r[4],expired_date:r[8]||null,ket:r[9]||null,kelengkapan_label:r[10]||null,updated_at:now}));
+ btn.disabled=true;const lbl=btn.textContent;btn.textContent='Mengirim...';
+ try{for(let i=0;i<rows.length;i+=500){await sbUp('hasil_so_export',rows.slice(i,i+500),'tanggal_so,kode_material');st('Mengirim... '+Math.min(i+500,rows.length)+'/'+rows.length)}
+  st('Terkirim: '+rows.length+' baris ke tabel hasil_so_export.');toast('Terkirim ke Supabase: '+rows.length+' baris')}
+ catch(e){st(sendErr(e))}finally{btn.disabled=false;btn.textContent=lbl}};
 
 $('#kbMode').onclick=()=>{const i=$('#manual'),n=i.inputMode==='numeric';i.inputMode=n?'text':'numeric';$('#kbMode').textContent=n?'123':'ABC';i.blur();i.focus()};
 applyLang();
