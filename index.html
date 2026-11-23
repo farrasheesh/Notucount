@@ -197,11 +197,11 @@ header{position:relative}
 <main>
 <section class="tab on" id="t-data">
  <div class="card"><h2>1. Database obat</h2>
-  <div class="m">File master (Kode Material, Nama Material, Rak). Tersimpan di HP, cukup upload sekali.</div>
+  <div class="m">File master (Kode Material, Nama Material, Rak). Tersimpan di HP ini saja, cukup upload sekali. Tidak mempengaruhi pengguna lain.</div>
   <label class="btn full" style="text-align:center;margin-top:8px">Upload database (.xlsx)<input id="fDb" type="file" accept=".xlsx,.xls,.csv" hidden></label>
   <div class="stat" id="sDb"></div></div>
  <div class="card"><h2>2. Stok komputer &amp; mulai SO</h2>
-  <div class="m">Upload hasil export dari sistem komputer (kolom Kode dan Stok; kolom lain diabaikan). Kode yang sama dijumlahkan. Upload = mulai SO baru, kecuali "Pertahankan hasil hitung" dicentang.</div>
+  <div class="m">Upload hasil export dari sistem komputer (kolom Kode dan Stok; kolom lain diabaikan). Kode yang sama dijumlahkan. Upload = mulai SO baru, kecuali "Pertahankan hasil hitung" dicentang. Hanya berlaku di HP ini, tidak mempengaruhi pengguna lain.</div>
   <label>Rak untuk form</label><select id="rakForm"><option value="">Semua rak</option></select>
   <div class="row" style="margin-top:8px"><label class="btn full" style="text-align:center;margin:0">Upload stok komputer<input id="fSys" type="file" accept=".xlsx,.xls,.csv" hidden></label><button class="ghost" id="bTpl">Unduh form (isi daftar obat)</button></div>
   <label style="display:flex;gap:8px;align-items:center;color:var(--ink);margin-top:10px"><input id="sysKeep" type="checkbox" style="width:auto;min-height:0"> Pertahankan hasil hitung (hanya perbarui stok komputer)</label>
@@ -241,7 +241,7 @@ header{position:relative}
  <div class="card"><h2>Reset</h2><button class="ghost full" id="bReset">Hapus hasil hitung saja</button></div>
 </section>
 <section class="tab" id="t-scan">
- <div class="card" style="padding:10px 14px"><label style="margin:0 0 4px">Tanggal SO</label><input id="tglSO" type="date"><div class="m" style="margin-top:4px">Ikut tersimpan di tiap hasil hitung, dan ikut ke Excel serta Google Sheet.</div></div>
+ <div class="card" style="padding:10px 14px"><label style="margin:0 0 4px">Tanggal SO</label><input id="tglSO" type="date"><label style="margin:10px 0 4px">Nama (opsional)</label><input id="namaSO" placeholder="Nama petugas, boleh kosong" autocomplete="off"><div class="m" style="margin-top:4px">Tanggal dan nama ikut tersimpan di tiap hasil hitung. Nama ikut ke Excel dan Send ke Supabase (belum ke Google Sheet).</div></div>
  <div class="card"><div id="reader"></div>
   <div class="row" style="margin-top:8px"><button id="bCam">Mulai kamera</button><button class="ghost" id="bStop">Stop</button></div>
   <label class="btn ghost full" style="text-align:center;margin-top:8px">Foto QR (pakai kamera HP)<input id="fImg" type="file" accept="image/*" capture="environment" hidden></label>
@@ -283,15 +283,18 @@ header{position:relative}
  <div class="stat" id="sList"></div><div id="list"></div></div>
 </section>
 <section class="tab" id="t-exp">
- <div class="card"><h2>Export hasil SO</h2><div class="m">Kolom: Tanggal SO, Kode Material, Material Description, Rak, Stok Komp, Fisik, Gudang, Selisih, Expired Date, Ket. (catatan, kosong kalau tidak diisi), Kelengkapan Label.</div>
- <label>Rak yang di-export</label><select id="rakExp"><option value="">Semua rak</option></select>
+ <div class="card"><h2>Export hasil SO</h2><div class="m">Kolom: Tanggal SO, Kode Material, Material Description, Rak, Stok Komp, Fisik, Gudang, Selisih, Expired Date, Ket. (catatan, kosong kalau tidak diisi), Kelengkapan Label, Nama (opsional).</div>
+ <label>Rak yang diproses (Export dan Send)</label>
+ <div id="rakExpBox" style="border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:2px 12px;max-height:230px;overflow:auto"></div>
+ <div class="row" style="margin-top:6px"><button class="ghost" id="rakAllBtn" type="button" style="min-height:40px">Centang semua</button><button class="ghost" id="rakNoneBtn" type="button" style="min-height:40px">Kosongkan</button></div>
+ <div class="m" id="rakExpInfo" style="margin-top:4px"></div>
  <label>Status</label><select id="stExp"><option value="">Semua</option><option value="h">Sudah dihitung</option><option value="b">Belum dihitung</option><option value="s">Selisih</option><option value="ok">Sesuai</option><option value="w">Melebihi batas</option></select>
  <div class="row" style="margin-top:10px"><button id="bExp">Export ke Excel</button><button class="ghost" id="bSend" type="button">Send ke Supabase</button></div><div class="stat" id="sExp"></div>
  <details style="margin-top:8px"><summary><b>Siapkan tabel Supabase (sekali saja)</b></summary>
- <div class="m" style="margin:6px 0">Send mengirim baris yang sudah dihitung ke tabel <b>hasil_so_export</b> dengan kolom yang sama seperti file export. Rak dan Status di atas ikut berlaku. Buka Supabase &gt; SQL Editor &gt; New query, tempel kode di bawah, lalu Run.</div>
+ <div class="m" style="margin:6px 0">Send mengirim baris yang sudah dihitung ke tabel <b>hasil_so_export</b> dengan kolom yang sama seperti file export. Rak yang dicentang dan Status di atas ikut berlaku. Server hanya dipakai saat tombol Send ditekan. Buka Supabase &gt; SQL Editor &gt; New query, tempel kode di bawah, lalu Run. Aman dijalankan ulang. Kalau tabelnya sudah pernah dibuat, jalankan ulang untuk menambah kolom nama.</div>
  <textarea id="sqlCode" readonly rows="10" style="width:100%;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"></textarea>
  <button id="sqlCopy" class="full" type="button" style="margin-top:8px">Salin SQL</button></details></div>
- <div class="card"><h2>Sinkron tim (Supabase)</h2><div class="m">Hasil hitung dikirim ke server bersama tiap Simpan, dan hasil HP lain ditarik ke sini. Butuh internet; kalau offline, antre dulu.</div>
+ <div class="card" id="teamCard" style="display:none"><h2>Sinkron tim (Supabase)</h2><div class="m">Hasil hitung dikirim ke server bersama tiap Simpan, dan hasil HP lain ditarik ke sini. Butuh internet; kalau offline, antre dulu.</div>
  <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input id="sbOn" type="checkbox" style="width:auto;min-height:0"> Sinkron otomatis</label>
  <div class="row" style="margin-top:8px"><button id="sbPull" class="ghost">Tarik hasil tim</button><button id="sbPush" class="ghost">Kirim semua</button></div>
  <div class="row" style="margin-top:8px"><button id="sbShareDb" class="ghost">Bagikan database obat</button><button id="sbShareStok" class="ghost">Bagikan stok (SO baru)</button></div>
@@ -389,7 +392,7 @@ $('#bTpl').onclick=async()=>{const rk=$('#rakForm').value;const rows=[['Kode Mat
 $('#bReset').onclick=()=>{if(confirm('Hapus semua hasil hitung di HP ini? Cadangan Excel dibuat dulu.')&&okBackup('cadangan_sebelum_hapus')){so={};LS.s('so_res',so);since=Date.now();LS.s('so_since',since);Q.clear();qSave();stats();render()}};
 async function save(name,wb){try{XLSX.writeFile(wb,name);toast('File disimpan: '+name)}catch(e){toast('Gagal export: '+(e.message||e))}}
 function match(t){t=norm(t);if(db[t])return t;const m=t.match(/\d{8,12}/g)||[];for(const x of m)if(db[x])return x;return null}
-function showItem(c){cur=c;const it=db[c],h=so[c];$('#fName').textContent=it.n||c;$('#fMeta').textContent=`${c} · Rak ${it.r||'-'}`;$('#fKomp').innerHTML='Stok komputer: <b style="font-size:22px">'+(c in sys?sys[c]:'belum diinput')+'</b>';$('#fQty').value=h?h.f:'';$('#fEd').value=h&&h.ed?h.ed.slice(0,7):'';$('#fGud').value=h&&h.g!=null?h.g:'';$('#fKel').value=h&&h.k?h.k:'';$('#fKet').value=h&&h.m?h.m:'';$('#form').style.display='block';lastW='';fw();calcClose();$('#fTgl').textContent='Tanggal SO: '+($('#tglSO').value||ymd())+' (ubah di bagian atas tab Scan)';$('#fQty').focus()}
+function showItem(c){cur=c;const it=db[c],h=so[c];$('#fName').textContent=it.n||c;$('#fMeta').textContent=`${c} · Rak ${it.r||'-'}`;$('#fKomp').innerHTML='Stok komputer: <b style="font-size:22px">'+(c in sys?sys[c]:'belum diinput')+'</b>';$('#fQty').value=h?h.f:'';$('#fEd').value=h&&h.ed?h.ed.slice(0,7):'';$('#fGud').value=h&&h.g!=null?h.g:'';$('#fKel').value=h&&h.k?h.k:'';$('#fKet').value=h&&h.m?h.m:'';$('#form').style.display='block';lastW='';fw();calcClose();$('#fTgl').textContent='Tanggal SO: '+($('#tglSO').value||ymd())+($('#namaSO').value.trim()?' | Nama: '+$('#namaSO').value.trim():'')+' (ubah di bagian atas tab Scan)';$('#fQty').focus()}
 function onScan(t){const c=match(t);if(!c){if(newOn)return;const m=String(t).match(/\d{8,12}/);try{navigator.vibrate&&navigator.vibrate([60,40,60])}catch(e){}return showNew(m?m[0]:norm(t).slice(0,40),'')}try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}stopCam();showItem(c)}
 async function startCam(){if(qr)return;if(typeof Html5Qrcode==='undefined')return toast('Library scan belum termuat, cek internet');qr=new Html5Qrcode('reader');try{await qr.start({facingMode:'environment'},{fps:10,qrbox:{width:230,height:230}},onScan,()=>{})}catch(e){qr=null;toast('Kamera gagal ('+((e&&e.name)||String(e)).slice(0,40)+'). Pakai tombol Foto QR')}}
 $('#fImg').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{await stopCam();const h=new Html5Qrcode('reader');const t=await h.scanFile(f,false);try{h.clear()}catch(x){}onScan(t)}catch(x){toast('QR tidak terbaca, foto lebih dekat dan fokus')}};
@@ -400,27 +403,28 @@ $('#bFind').onclick=()=>{const v=$('#manual').value.trim(),box=$('#mCand');box.i
   if(ks.length===1)c=ks[0];else if(ks.length>1){box.innerHTML=ks.slice(0,10).map(k=>'<div class="item" data-c="'+k+'"><b>'+esc(db[k].n)+'</b><span class="m">'+k+' | Rak '+esc(db[k].r||'-')+'</span></div>').join('')+(ks.length>10?'<div class="m">Ada '+ks.length+' hasil, sebut lebih banyak angka.</div>':'');return}}
  if(!c){if(!v)return toast('Isi nama atau kode obat');const rs=nameSearch(v);if(rs.length===1)c=rs[0];else return showCand(v,rs)}$('#manual').value='';stopCam();showItem(c)};
 $('#mCand').onclick=e=>{const d=e.target.closest('.item');if(!d)return;$('#mCand').innerHTML='';$('#manual').value='';stopCam();showItem(d.dataset.c)};
-$('#bSave').onclick=()=>{const v=$('#fQty').value;if(v===''||Number(v)<0)return toast('Isi stok fisik');so[cur]={f:Number(v),ed:$('#fEd').value,t:Date.now(),d:$('#tglSO').value||ymd(),g:$('#fGud').value===''?null:Number($('#fGud').value),k:$('#fKel').value,m:$('#fKet').value.trim()};
+$('#bSave').onclick=()=>{const v=$('#fQty').value;if(v===''||Number(v)<0)return toast('Isi stok fisik');so[cur]={f:Number(v),ed:$('#fEd').value,t:Date.now(),d:$('#tglSO').value||ymd(),p:($('#namaSO').value||'').trim(),g:$('#fGud').value===''?null:Number($('#fGud').value),k:$('#fKel').value,m:$('#fKet').value.trim()};
  if(LS.s('so_res',so)){toast('Tersimpan');qAdd(cur);$('#form').style.display='none';cur=null;stats();render();startCam()}};
 $('#bCancel').onclick=()=>{$('#form').style.display='none';cur=null;startCam()};
 function status(c){const h=so[c];if(!h)return['Belum dihitung','b'];const d=h.f-(sys[c]||0);return d===0?['Sesuai','ok']:[(d>0?'+':'')+d,'s']}
-function fillRak(){const r=[...new Set(Object.values(db).map(x=>x.r).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));const o='<option value="">Semua rak</option>'+r.map(x=>`<option>${x}</option>`).join('');['#fRak','#rakForm','#rakExp'].forEach(s=>$(s).innerHTML=o);$('#sRak').innerHTML='<option value="">Semua rak (pakai pencarian)</option>'+r.map(x=>`<option>${x}</option>`).join('')}
+function fillRak(){const r=[...new Set(Object.values(db).map(x=>x.r).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));const o='<option value="">Semua rak</option>'+r.map(x=>`<option>${x}</option>`).join('');['#fRak','#rakForm'].forEach(s=>$(s).innerHTML=o);$('#sRak').innerHTML='<option value="">Semua rak (pakai pencarian)</option>'+r.map(x=>`<option>${x}</option>`).join('');rakExpUi()}
 function render(){const q=$('#q').value.toLowerCase(),rk=$('#fRak').value,st=$('#fSt').value;let out=[],tot=0;
  for(const c in db){const it=db[c];if(rk&&it.r!==rk)continue;if(q&&!mt(c,it,q))continue;const s=status(c);if(st==='h'?!so[c]:st==='w'?!(so[c]&&wchk(c,so[c].f)):(st&&s[1]!==st))continue;tot++;if(out.length<80)out.push([c,it,s])}
  $('#sList').textContent=`${tot} obat${tot>80?' (tampil 80 pertama, persempit pencarian)':''}`;
- $('#list').innerHTML=out.map(([c,it,s])=>{const h=so[c];return `<div class="item" data-c="${c}"><b>${esc(it.n)}</b><span class="m">${c} · Rak ${esc(it.r||'-')} · Komputer ${sys[c]??0}${h?` · Tgl ${dateOf(h)} · Fisik ${h.f}${h.ed?` · ED ${h.ed}`:''}${h.g!=null?` · Gudang ${h.g}`:''}${h.k?` · Label ${h.k}`:''}${h.m?` · Ket ${esc(h.m)}`:''}`:''}</span> <span class="tag ${s[1]==='ok'?'ok':s[1]==='s'?'bd':'wr'}">${s[0]}</span>${h&&wchk(c,h.f)?' <span class="tag bd">PERIKSA</span>':''}</div>`}).join('')}
+ $('#list').innerHTML=out.map(([c,it,s])=>{const h=so[c];return `<div class="item" data-c="${c}"><b>${esc(it.n)}</b><span class="m">${c} · Rak ${esc(it.r||'-')} · Komputer ${sys[c]??0}${h?` · Tgl ${dateOf(h)}${h.p?` · ${esc(h.p)}`:''} · Fisik ${h.f}${h.ed?` · ED ${h.ed}`:''}${h.g!=null?` · Gudang ${h.g}`:''}${h.k?` · Label ${h.k}`:''}${h.m?` · Ket ${esc(h.m)}`:''}`:''}</span> <span class="tag ${s[1]==='ok'?'ok':s[1]==='s'?'bd':'wr'}">${s[0]}</span>${h&&wchk(c,h.f)?' <span class="tag bd">PERIKSA</span>':''}</div>`}).join('')}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 ['q','fRak','fSt'].forEach(i=>$('#'+i).oninput=render);
 $('#list').onclick=e=>{const d=e.target.closest('.item');if(!d)return;tab('scan');stopCam();showItem(d.dataset.c)};
-function exportRows(){const rows=[['Tanggal SO','Kode Material','Material Description','Rak','Stok Komp','Fisik','Gudang','Selisih','Expired Date','Ket.','Kelengkapan Label']];
- const rk=$('#rakExp').value;const codes=[...new Set([...Object.keys(db),...Object.keys(sys)])].filter(c=>!rk||(db[c]&&db[c].r===rk)).filter(c=>{const st=$('#stExp').value;if(!st)return true;const x=so[c],k=sys[c]||0;return st==='h'?!!x:st==='b'?!x:st==='ok'?!!(x&&x.f===k):st==='w'?!!(x&&wchk(c,x.f)):!!(x&&x.f!==k)});
- codes.forEach(c=>{const it=db[c]||{n:'(tidak ada di database)',r:''},h=so[c],k=sys[c]||0;rows.push([h?dateOf(h):'',c,it.n,it.r,k,h?h.f:'',h&&h.g!=null?h.g:'','',h&&h.ed?h.ed:'',h&&h.m?h.m:'',h&&h.k?h.k:''])});
+function exportRows(){const rows=[['Tanggal SO','Kode Material','Material Description','Rak','Stok Komp','Fisik','Gudang','Selisih','Expired Date','Ket.','Kelengkapan Label','Nama']];
+ const codes=[...new Set([...Object.keys(db),...Object.keys(sys)])].filter(c=>rakOn(c)).filter(c=>{const st=$('#stExp').value;if(!st)return true;const x=so[c],k=sys[c]||0;return st==='h'?!!x:st==='b'?!x:st==='ok'?!!(x&&x.f===k):st==='w'?!!(x&&wchk(c,x.f)):!!(x&&x.f!==k)});
+ codes.forEach(c=>{const it=db[c]||{n:'(tidak ada di database)',r:''},h=so[c],k=sys[c]||0;rows.push([h?dateOf(h):'',c,it.n,it.r,k,h?h.f:'',h&&h.g!=null?h.g:'','',h&&h.ed?h.ed:'',h&&h.m?h.m:'',h&&h.k?h.k:'',h&&h.p?h.p:''])});
  return rows}
 $('#bExp').onclick=async()=>{if(!Object.keys(db).length)return toast('Database kosong');
- const rows=exportRows();const rk=$('#rakExp').value;const STN={h:'sudah-dihitung',b:'belum-dihitung',s:'selisih',ok:'sesuai',w:'melebihi-batas'};
+ if(!rakSelCount())return toast('Centang minimal satu rak dulu');
+ const rows=exportRows();const rk=rakTag();const STN={h:'sudah-dihitung',b:'belum-dihitung',s:'selisih',ok:'sesuai',w:'melebihi-batas'};
  const ws=XLSX.utils.aoa_to_sheet(rows);for(let i=1;i<rows.length;i++){const r=i+1,e=rows[i][5],dd=rows[i][4],v=(e===''||e==null)?'':e-dd;ws['H'+r]={t:v===''?'s':'n',v:v,f:'IF(F'+r+'="","",F'+r+'-E'+r+')'}}
- ws['!cols']=[{wch:12},{wch:14},{wch:44},{wch:6},{wch:10},{wch:8},{wch:8},{wch:9},{wch:12},{wch:16},{wch:16}];
- const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Hasil SO');await save('hasil_SO_'+(rk?'rak'+rk+'_':'')+($('#stExp').value?STN[$('#stExp').value]+'_':'')+new Date().toISOString().slice(0,10)+'.xlsx',wb)};
+ ws['!cols']=[{wch:12},{wch:14},{wch:44},{wch:6},{wch:10},{wch:8},{wch:8},{wch:9},{wch:12},{wch:16},{wch:16},{wch:18}];
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Hasil SO');await save('hasil_SO_'+(rk?rk+'_':'')+($('#stExp').value?STN[$('#stExp').value]+'_':'')+new Date().toISOString().slice(0,10)+'.xlsx',wb)};
 function tab(n){window.scrollTo(0,0);document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.id==='t-'+n));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===n));if(n!=='scan')stopCam();if(n==='list'){render();if(SYNC.on)chkSesi(true).then(()=>pull())}}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -441,7 +445,7 @@ document.querySelectorAll('.mic').forEach(b=>b.onclick=()=>listen(b.dataset.k));
 if(!SR)document.querySelectorAll('.mic').forEach(b=>b.style.display='none');
 const SB='https://wkzuxofzxbeilddwdrab.supabase.co',SK='sb_publishable_F5F78ILOOceaY0ZPZjyYpQ_3-_tw8q0';
 const SBH={apikey:SK,Authorization:'Bearer '+SK,'Content-Type':'application/json'};
-let Q=new Set(LS.g('so_q',[])),SYNC=LS.g('so_sync',{on:true}),since=LS.g('so_since',0),flushing=false;
+let Q=new Set(LS.g('so_q',[])),SYNC={on:false},since=LS.g('so_since',0),flushing=false;
 const qSave=()=>LS.s('so_q',[...Q]),sbStat=m=>{$('#sbStat').textContent=m};
 const sbRow=c=>{const it=db[c]||{},h=so[c];return{kode:c,nama:it.n||null,rak:it.r||null,stok_komputer:c in sys?sys[c]:null,stok_fisik:h.f,ed:h.ed||null,updated_at:new Date(h.t||Date.now()).toISOString(),gudang:h.g==null?null:h.g,kelengkapan:h.k||null,ket:h.m||null,sesi:SESI||null}};
 async function flush(){if(!SYNC.on||flushing||!Q.size||!navigator.onLine)return;if(isStale())return sbStat('Pengiriman ke tim dijeda: tim memulai SO baru. Ambil SO baru lewat banner di atas.');flushing=true;
@@ -709,7 +713,7 @@ document.addEventListener('touchstart',e=>{p2rY=e.touches[0]?e.touches[0].client
 document.addEventListener('touchmove',e=>{if(!e.touches||e.touches.length!==1)return;const dy=e.touches[0].clientY-p2rY;if(dy<=0||window.scrollY>0)return;
  let el=e.target;while(el&&el!==document.body&&el!==document.documentElement){if(el.scrollHeight>el.clientHeight+1&&/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollTop>0)return;el=el.parentElement}
  if(e.cancelable)e.preventDefault()},{passive:false});
-var APPV='v52';
+var APPV='v54';
 function doReload(){location.reload()}
 try{localStorage.removeItem('so_navmin');localStorage.removeItem('so_navhint')}catch(e){}
 $('#verInfo').textContent='Versi: '+APPV;
@@ -937,13 +941,13 @@ $('#fRes').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)
   const wb=await readWBd(f);let rows=null;
   for(const n of [...wb.SheetNames].sort((a,b)=>/hasil/i.test(b)-/hasil/i.test(a))){const r=XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:''});if(r.length&&fk(r[0],/^kode/i)&&fk(r[0],/^fisik/i,/^stok\s*fisik/i)){rows=r;break}}
   if(!rows)return st('Kolom Kode Material dan Fisik tidak ketemu. Pakai file hasil export aplikasi ini.');
-  const r0=rows[0],kc=fk(r0,/^kode/i),fc=fk(r0,/^fisik/i,/^stok\s*fisik/i),tc=fk(r0,/^tanggal/i,/^tgl/i),ec=fk(r0,/^expired/i,/^ed$/i,/^exp/i),gc=fk(r0,/^gudang/i),mc=fk(r0,/^ket/i),lc=fk(r0,/kelengkapan/i,/^label/i),wc=fk(r0,/^waktu/i);
+  const r0=rows[0],kc=fk(r0,/^kode/i),fc=fk(r0,/^fisik/i,/^stok\s*fisik/i),tc=fk(r0,/^tanggal/i,/^tgl/i),ec=fk(r0,/^expired/i,/^ed$/i,/^exp/i),gc=fk(r0,/^gudang/i),mc=fk(r0,/^ket/i),lc=fk(r0,/kelengkapan/i,/^label/i),wc=fk(r0,/^waktu/i),pc=fk(r0,/^nama(?!\s*material)/i,/^petugas/i);
   const best={};let tanpaFisik=0;
   rows.forEach(r=>{const c=norm(r[kc]);if(!c)return;const f=impNum(r[fc]);if(f==null||f<0){tanpaFisik++;return}
    const d=tc?impDate(r[tc]):'',t=impTime(wc?r[wc]:'',d),key=(d||'')+' '+String(t).padStart(15,'0');
    if(best[c]&&best[c].key>key)return;
    const lb=lc?String(r[lc]).trim():'';
-   best[c]={key,v:{f,ed:ec?impEd(r[ec]):'',t:t||Date.now(),d:d||undefined,g:gc&&impNum(r[gc])!=null?impNum(r[gc]):null,k:/tidak/i.test(lb)?'Tidak lengkap':/lengkap/i.test(lb)?'Lengkap':'',m:mc?String(r[mc]).trim():''}}});
+   best[c]={key,v:{f,ed:ec?impEd(r[ec]):'',t:t||Date.now(),d:d||undefined,p:pc?String(r[pc]).trim():'',g:gc&&impNum(r[gc])!=null?impNum(r[gc]):null,k:/tidak/i.test(lb)?'Tidak lengkap':/lengkap/i.test(lb)?'Lengkap':'',m:mc?String(r[mc]).trim():''}}});
   const all=Object.keys(best),notDb=all.filter(c=>!db[c]),inDb=all.filter(c=>db[c]),mode=$('#impMode').value,ada=inDb.filter(c=>so[c]),
    masuk=mode==='over'?inDb:inDb.filter(c=>!so[c]);
   if(!masuk.length)return st('Tidak ada yang diimpor. Ditemukan '+all.length+' kode berhasil dihitung: '+ada.length+' sudah punya hasil (dilewati), '+notDb.length+' tidak ada di database, '+tanpaFisik+' baris tanpa Fisik.');
@@ -983,8 +987,8 @@ function isStale(){return !!staleS&&staleS!==SESI}
 function staleUi(){const b=$('#staleBar');if(b)b.style.display=isStale()?'block':'none'}
 function staleSet(v){staleS=v||'';LS.s('so_stale',staleS);staleUi()}
 function backupSO(tag){try{const ks=Object.keys(so);if(!ks.length)return true;
- const rows=[['Tanggal SO','Kode Material','Material Description','Rak','Stok Komp','Fisik','Gudang','Selisih','Expired Date','Ket.','Kelengkapan Label','Waktu Input']];
- ks.forEach(c=>rows.push(gsRowSo(c)));
+ const rows=[['Tanggal SO','Kode Material','Material Description','Rak','Stok Komp','Fisik','Gudang','Selisih','Expired Date','Ket.','Kelengkapan Label','Waktu Input','Nama']];
+ ks.forEach(c=>rows.push([...gsRowSo(c),so[c].p||'']));
  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:12},{wch:14},{wch:44},{wch:6},{wch:10},{wch:8},{wch:8},{wch:9},{wch:12},{wch:16},{wch:16},{wch:17}];
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Hasil SO');const d=new Date(),nm=tag+'_'+ymd(d)+'_'+pad2(d.getHours())+pad2(d.getMinutes())+'.xlsx';
  XLSX.writeFile(wb,nm);toast('Cadangan tersimpan: '+nm);return true}catch(e){return false}}
@@ -1007,9 +1011,11 @@ create table if not exists public.hasil_so_export (
   expired_date text,
   ket text,
   kelengkapan_label text,
+  nama text,
   updated_at timestamptz not null default now(),
   primary key (tanggal_so, kode_material)
 );
+alter table public.hasil_so_export add column if not exists nama text;
 alter table public.hasil_so_export enable row level security;
 drop policy if exists so_export_select on public.hasil_so_export;
 drop policy if exists so_export_insert on public.hasil_so_export;
@@ -1028,13 +1034,35 @@ const sendErr=e=>{const m=String(e&&e.message||e);
 $('#bSend').onclick=async()=>{const st=m=>{$('#sExp').textContent=m},btn=$('#bSend');
  if(!Object.keys(db).length)return st('Database kosong.');
  if(!navigator.onLine)return st('Offline, tidak bisa kirim.');
+ if(!rakSelCount())return st('Centang minimal satu rak dulu.');
  const src=exportRows().slice(1).filter(r=>r[5]!==''&&r[5]!=null);
- if(!src.length)return st('Tidak ada hasil hitung untuk dikirim (sesuai filter Rak dan Status di atas).');
+ if(!src.length)return st('Tidak ada hasil hitung untuk dikirim (sesuai rak yang dicentang dan Status di atas).');
  const now=new Date().toISOString(),rows=src.map(r=>({tanggal_so:r[0],kode_material:r[1],material_description:r[2]||null,rak:r[3]||null,stok_komp:r[4],fisik:r[5],gudang:r[6]===''?null:r[6],selisih:r[5]-r[4],expired_date:r[8]||null,ket:r[9]||null,kelengkapan_label:r[10]||null,updated_at:now}));
+ if(src.some(r=>r[11]))rows.forEach((o,i)=>{o.nama=src[i][11]||null});
  btn.disabled=true;const lbl=btn.textContent;btn.textContent='Mengirim...';
  try{for(let i=0;i<rows.length;i+=500){await sbUp('hasil_so_export',rows.slice(i,i+500),'tanggal_so,kode_material');st('Mengirim... '+Math.min(i+500,rows.length)+'/'+rows.length)}
   st('Terkirim: '+rows.length+' baris ke tabel hasil_so_export.');toast('Terkirim ke Supabase: '+rows.length+' baris')}
  catch(e){st(sendErr(e))}finally{btn.disabled=false;btn.textContent=lbl}};
+
+$('#namaSO').value=LS.g('so_nama','');
+$('#namaSO').oninput=()=>LS.s('so_nama',$('#namaSO').value);
+
+var RAKOFF=null;
+function rakInit(){if(!RAKOFF)RAKOFF=new Set(LS.g('so_rakoff',[]))}
+function rakAll(){const m=new Map();[...new Set([...Object.keys(db),...Object.keys(sys)])].forEach(c=>{const r=(db[c]&&db[c].r)||'';m.set(r,(m.get(r)||0)+1)});
+ return [...m.entries()].sort((a,b)=>a[0]===''?1:b[0]===''?-1:a[0].localeCompare(b[0],undefined,{numeric:true}))}
+function rakOn(c){rakInit();return !RAKOFF.has((db[c]&&db[c].r)||'')}
+function rakSelCount(){rakInit();return rakAll().filter(([r])=>!RAKOFF.has(r)).length}
+function rakTag(){rakInit();const all=rakAll(),on=all.filter(([r])=>!RAKOFF.has(r)).map(([r])=>r||'tanpa-rak');if(on.length===all.length)return'';
+ return 'rak-'+(on.length<=3?on.join('-'):on.length+'-pilihan').replace(/[^\w.-]+/g,'-')}
+function rakInfo(){rakInit();const all=rakAll();$('#rakExpInfo').textContent=all.length?rakSelCount()+' dari '+all.length+' rak dicentang.':''}
+function rakExpUi(){rakInit();const all=rakAll(),box=$('#rakExpBox');
+ box.innerHTML=all.length?all.map(([r,n])=>'<label style="display:flex;align-items:center;gap:10px;margin:0;padding:9px 0;border-bottom:1px solid var(--line);text-transform:none;letter-spacing:0;font-weight:600;font-size:15px;color:var(--ink)"><input type="checkbox" data-r="'+esc(r)+'"'+(RAKOFF.has(r)?'':' checked')+' style="width:20px;height:20px;min-height:0;flex:0 0 20px;padding:0;accent-color:var(--pri)"><span>'+(r?esc(r):'(tanpa rak)')+'</span><span class="m" style="margin-left:auto;font-weight:500">'+n+' obat</span></label>').join(''):'<div class="m" style="padding:8px 0">Belum ada database.</div>';
+ rakInfo()}
+$('#rakExpBox').addEventListener('change',e=>{const c=e.target.closest('input[data-r]');if(!c)return;rakInit();if(c.checked)RAKOFF.delete(c.dataset.r);else RAKOFF.add(c.dataset.r);LS.s('so_rakoff',[...RAKOFF]);rakInfo()});
+$('#rakAllBtn').onclick=()=>{RAKOFF=new Set();LS.s('so_rakoff',[]);rakExpUi()};
+$('#rakNoneBtn').onclick=()=>{RAKOFF=new Set(rakAll().map(x=>x[0]));LS.s('so_rakoff',[...RAKOFF]);rakExpUi()};
+LS.s('so_sync',{on:false});staleS='';skipS='';LS.s('so_stale','');LS.s('so_skip','');staleUi();
 
 $('#kbMode').onclick=()=>{const i=$('#manual'),n=i.inputMode==='numeric';i.inputMode=n?'text':'numeric';$('#kbMode').textContent=n?'123':'ABC';i.blur();i.focus()};
 applyLang();
