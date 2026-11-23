@@ -291,7 +291,7 @@ header{position:relative}
  <label>Status</label><select id="stExp"><option value="">Semua</option><option value="h">Sudah dihitung</option><option value="b">Belum dihitung</option><option value="s">Selisih</option><option value="ok">Sesuai</option><option value="w">Melebihi batas</option></select>
  <div class="row" style="margin-top:10px"><button id="bExp">Export ke Excel</button><button class="ghost" id="bSend" type="button">Send ke Supabase</button></div><div class="stat" id="sExp"></div>
  <details style="margin-top:8px"><summary><b>Siapkan tabel Supabase (sekali saja)</b></summary>
- <div class="m" style="margin:6px 0">Send mengirim baris yang sudah dihitung ke tabel <b>hasil_so_export</b> dengan kolom yang sama seperti file export. Rak yang dicentang dan Status di atas ikut berlaku. Server hanya dipakai saat tombol Send ditekan. Buka Supabase &gt; SQL Editor &gt; New query, tempel kode di bawah, lalu Run. Aman dijalankan ulang. Kalau tabelnya sudah pernah dibuat, jalankan ulang untuk menambah kolom nama.</div>
+ <div class="m" style="margin:6px 0">Send hanya mengirim hasil yang dihitung di HP ini ke tabel <b>hasil_so_export</b> dengan kolom yang sama seperti file export. Rak yang dicentang dan Status di atas ikut berlaku. Server hanya dipakai saat tombol Send ditekan. Buka Supabase &gt; SQL Editor &gt; New query, tempel kode di bawah, lalu Run. Aman dijalankan ulang. Kalau tabelnya sudah pernah dibuat, jalankan ulang untuk menambah kolom nama.</div>
  <textarea id="sqlCode" readonly rows="10" style="width:100%;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)"></textarea>
  <button id="sqlCopy" class="full" type="button" style="margin-top:8px">Salin SQL</button></details></div>
  <div class="card" id="teamCard" style="display:none"><h2>Sinkron tim (Supabase)</h2><div class="m">Hasil hitung dikirim ke server bersama tiap Simpan, dan hasil HP lain ditarik ke sini. Butuh internet; kalau offline, antre dulu.</div>
@@ -713,7 +713,7 @@ document.addEventListener('touchstart',e=>{p2rY=e.touches[0]?e.touches[0].client
 document.addEventListener('touchmove',e=>{if(!e.touches||e.touches.length!==1)return;const dy=e.touches[0].clientY-p2rY;if(dy<=0||window.scrollY>0)return;
  let el=e.target;while(el&&el!==document.body&&el!==document.documentElement){if(el.scrollHeight>el.clientHeight+1&&/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollTop>0)return;el=el.parentElement}
  if(e.cancelable)e.preventDefault()},{passive:false});
-var APPV='v54';
+var APPV='v55';
 function doReload(){location.reload()}
 try{localStorage.removeItem('so_navmin');localStorage.removeItem('so_navhint')}catch(e){}
 $('#verInfo').textContent='Versi: '+APPV;
@@ -947,7 +947,7 @@ $('#fRes').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)
    const d=tc?impDate(r[tc]):'',t=impTime(wc?r[wc]:'',d),key=(d||'')+' '+String(t).padStart(15,'0');
    if(best[c]&&best[c].key>key)return;
    const lb=lc?String(r[lc]).trim():'';
-   best[c]={key,v:{f,ed:ec?impEd(r[ec]):'',t:t||Date.now(),d:d||undefined,p:pc?String(r[pc]).trim():'',g:gc&&impNum(r[gc])!=null?impNum(r[gc]):null,k:/tidak/i.test(lb)?'Tidak lengkap':/lengkap/i.test(lb)?'Lengkap':'',m:mc?String(r[mc]).trim():''}}});
+   best[c]={key,v:{f,ed:ec?impEd(r[ec]):'',t:t||Date.now(),d:d||ymd(t||Date.now()),p:pc?String(r[pc]).trim():'',g:gc&&impNum(r[gc])!=null?impNum(r[gc]):null,k:/tidak/i.test(lb)?'Tidak lengkap':/lengkap/i.test(lb)?'Lengkap':'',m:mc?String(r[mc]).trim():''}}});
   const all=Object.keys(best),notDb=all.filter(c=>!db[c]),inDb=all.filter(c=>db[c]),mode=$('#impMode').value,ada=inDb.filter(c=>so[c]),
    masuk=mode==='over'?inDb:inDb.filter(c=>!so[c]);
   if(!masuk.length)return st('Tidak ada yang diimpor. Ditemukan '+all.length+' kode berhasil dihitung: '+ada.length+' sudah punya hasil (dilewati), '+notDb.length+' tidak ada di database, '+tanpaFisik+' baris tanpa Fisik.');
@@ -1035,13 +1035,17 @@ $('#bSend').onclick=async()=>{const st=m=>{$('#sExp').textContent=m},btn=$('#bSe
  if(!Object.keys(db).length)return st('Database kosong.');
  if(!navigator.onLine)return st('Offline, tidak bisa kirim.');
  if(!rakSelCount())return st('Centang minimal satu rak dulu.');
- const src=exportRows().slice(1).filter(r=>r[5]!==''&&r[5]!=null);
- if(!src.length)return st('Tidak ada hasil hitung untuk dikirim (sesuai rak yang dicentang dan Status di atas).');
+ const all=exportRows().slice(1).filter(r=>r[5]!==''&&r[5]!=null);
+ if(!all.length)return st('Tidak ada hasil hitung untuk dikirim (sesuai rak yang dicentang dan Status di atas).');
+ const mine=all.filter(r=>so[r[1]]&&so[r[1]].d),unk=all.filter(r=>!(so[r[1]]&&so[r[1]].d));let src=mine;
+ if(unk.length&&confirm('Ada '+unk.length+' hasil lama yang tidak diketahui hitungan siapa (bisa tarikan dari HP lain).\n\nPastikan rak yang dicentang hanya rak yang kamu hitung.\n\nOK = kirim juga dan anggap milik HP ini.\nCancel = lewati, kirim hanya yang dihitung di HP ini.')){unk.forEach(r=>{const h=so[r[1]];h.d=ymd(h.t)});LS.s('so_res',so);src=all}
+ const lewat=src===mine&&unk.length?' '+unk.length+' hasil tak diketahui asalnya dilewati.':'';
+ if(!src.length)return st('Tidak ada hasil milik HP ini untuk dikirim.'+lewat);
  const now=new Date().toISOString(),rows=src.map(r=>({tanggal_so:r[0],kode_material:r[1],material_description:r[2]||null,rak:r[3]||null,stok_komp:r[4],fisik:r[5],gudang:r[6]===''?null:r[6],selisih:r[5]-r[4],expired_date:r[8]||null,ket:r[9]||null,kelengkapan_label:r[10]||null,updated_at:now}));
  if(src.some(r=>r[11]))rows.forEach((o,i)=>{o.nama=src[i][11]||null});
  btn.disabled=true;const lbl=btn.textContent;btn.textContent='Mengirim...';
  try{for(let i=0;i<rows.length;i+=500){await sbUp('hasil_so_export',rows.slice(i,i+500),'tanggal_so,kode_material');st('Mengirim... '+Math.min(i+500,rows.length)+'/'+rows.length)}
-  st('Terkirim: '+rows.length+' baris ke tabel hasil_so_export.');toast('Terkirim ke Supabase: '+rows.length+' baris')}
+  st('Terkirim: '+rows.length+' baris ke tabel hasil_so_export.'+lewat);toast('Terkirim ke Supabase: '+rows.length+' baris')}
  catch(e){st(sendErr(e))}finally{btn.disabled=false;btn.textContent=lbl}};
 
 $('#namaSO').value=LS.g('so_nama','');
