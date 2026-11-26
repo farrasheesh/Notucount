@@ -290,6 +290,8 @@ header{position:relative}
  <div class="row" style="margin-top:6px"><button class="ghost" id="rakAllBtn" type="button" style="min-height:40px">Centang semua</button><button class="ghost" id="rakNoneBtn" type="button" style="min-height:40px">Kosongkan</button></div>
  <div class="m" id="rakExpInfo" style="margin-top:4px"></div>
  <label>Status</label><select id="stExp"><option value="">Semua</option><option value="h">Sudah dihitung</option><option value="b">Belum dihitung</option><option value="s">Selisih</option><option value="ok">Sesuai</option><option value="w">Melebihi batas</option></select>
+ <label style="display:flex;gap:8px;align-items:center;color:var(--ink);margin-top:10px"><input id="expAnalisa" type="checkbox" style="width:auto;min-height:0"> Sertakan analisa hasil SO</label>
+ <div class="m" style="margin-top:2px">Menambah 5 sheet ke file Excel: Gabungan Hasil SO, Nama Sama Beda Data, Kode Sama Beda Data, Temuan Aneh, dan Kesimpulan SO. Hanya untuk Export Excel, tidak ikut Send.</div>
  <div class="row" style="margin-top:10px"><button id="bExp">Export ke Excel</button><button class="ghost" id="bSend" type="button">Send ke Supabase</button></div><div class="stat" id="sExp"></div>
  <details style="margin-top:8px"><summary><b>Siapkan tabel Supabase (sekali saja)</b></summary>
  <div class="m" style="margin:6px 0">Send hanya mengirim hasil yang dihitung di HP ini ke tabel <b>hasil_so_export</b> dengan kolom yang sama seperti file export. Rak yang dicentang dan Status di atas ikut berlaku. Server hanya dipakai saat tombol Send ditekan. Buka Supabase &gt; SQL Editor &gt; New query, tempel kode di bawah, lalu Run. Aman dijalankan ulang. Kalau tabelnya sudah pernah dibuat, jalankan ulang untuk menambah kolom nama.</div>
@@ -425,7 +427,7 @@ $('#bExp').onclick=async()=>{if(!Object.keys(db).length)return toast('Database k
  const rows=exportRows();const rk=rakTag();const STN={h:'sudah-dihitung',b:'belum-dihitung',s:'selisih',ok:'sesuai',w:'melebihi-batas'};
  const ws=XLSX.utils.aoa_to_sheet(rows);for(let i=1;i<rows.length;i++){const r=i+1,e=rows[i][5],dd=rows[i][4],v=(e===''||e==null)?'':e-dd;ws['H'+r]={t:v===''?'s':'n',v:v,f:'IF(F'+r+'="","",F'+r+'-E'+r+')'}}
  ws['!cols']=[{wch:12},{wch:14},{wch:44},{wch:6},{wch:10},{wch:8},{wch:8},{wch:9},{wch:12},{wch:16},{wch:16},{wch:18}];
- const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Hasil SO');await save('hasil_SO_'+(rk?rk+'_':'')+($('#stExp').value?STN[$('#stExp').value]+'_':'')+new Date().toISOString().slice(0,10)+'.xlsx',wb)};
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Hasil SO');if($('#expAnalisa').checked)addAnalisa(wb,rows.slice(1));await save('hasil_SO_'+(rk?rk+'_':'')+($('#stExp').value?STN[$('#stExp').value]+'_':'')+new Date().toISOString().slice(0,10)+'.xlsx',wb)};
 function tab(n){window.scrollTo(0,0);document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.id==='t-'+n));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===n));if(n!=='scan')stopCam();if(n==='list'){render();if(SYNC.on)chkSesi(true).then(()=>pull())}}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -714,7 +716,7 @@ document.addEventListener('touchstart',e=>{p2rY=e.touches[0]?e.touches[0].client
 document.addEventListener('touchmove',e=>{if(!e.touches||e.touches.length!==1)return;const dy=e.touches[0].clientY-p2rY;if(dy<=0||window.scrollY>0)return;
  let el=e.target;while(el&&el!==document.body&&el!==document.documentElement){if(el.scrollHeight>el.clientHeight+1&&/auto|scroll/.test(getComputedStyle(el).overflowY)&&el.scrollTop>0)return;el=el.parentElement}
  if(e.cancelable)e.preventDefault()},{passive:false});
-var APPV='v56';
+var APPV='v57';
 function doReload(){location.reload()}
 try{localStorage.removeItem('so_navmin');localStorage.removeItem('so_navhint')}catch(e){}
 $('#verInfo').textContent='Versi: '+APPV;
@@ -1078,6 +1080,69 @@ LS.s('so_sync',{on:false});staleS='';skipS='';LS.s('so_stale','');LS.s('so_skip'
 $('#bClrSys').onclick=()=>{const n=Object.keys(sys).length;if(!n)return toast('Stok komputer sudah kosong');
  if(!confirm('Kosongkan stok komputer ('+n+' kode) di HP ini?\n\nHasil hitung tidak dihapus. Stok bisa diupload lagi kapan saja. Hanya berlaku di HP ini.'))return;
  sys={};LS.s('so_sys',sys);lastImp='';stats();render();rakExpUi();toast('Stok komputer dikosongkan')};
+
+function addAnalisa(wb,raw){
+ const X=XLSX,ref=($('#tglSO').value||ymd()).slice(0,7),r2=n=>Math.round(n*100)/100;
+ const num=v=>{if(v===''||v==null)return null;const n=Number(v);return isFinite(n)?n:null},nz=v=>{const t=String(v==null?'':v).trim();return t===''?null:t};
+ const cmpv=(a,b)=>a==null?(b==null?0:1):b==null?-1:String(a).localeCompare(String(b),'id',{numeric:true,sensitivity:'base'});
+ const mon=(ym,d)=>{const a=ym.split('-').map(Number),t=a[0]*12+(a[1]-1)+d;return Math.floor(t/12)+'-'+pad2(t%12+1)};
+ const mdiff=(a,b)=>{const x=a.split('-').map(Number),y=b.split('-').map(Number);return (x[0]*12+x[1])-(y[0]*12+y[1])};
+ const rakOut=v=>v==null?'':(/^\d+$/.test(v)?Number(v):v);
+ const recs=raw.map(r=>{const f=num(r[5]),k=num(r[4])||0,g=num(r[6]);return{tgl:nz(r[0]),kode:String(r[1]),desc:String(r[2]||'').trim().toUpperCase(),rak:nz(r[3]),komp:k,fisik:f,gud:g,sel:f==null?null:r2(f-k),ed:impEd(r[8])||null,ket:nz(r[9]),lab:nz(r[10]),nama:nz(r[11])}});
+ const H=['Tanggal SO','Kode Material','Material Description','Rak','Stok Komp','Fisik','Gudang','Selisih','Expired Date','Ket.','Kelengkapan Label','Nama'];
+ const W=[12,14,44,6,10,8,8,9,12,16,16,18];
+ const R=x=>[x.tgl||'',x.kode,x.desc,rakOut(x.rak),x.komp,x.fisik==null?'':x.fisik,x.gud==null?'':x.gud,x.sel==null?'':x.sel,x.ed||'',x.ket||'',x.lab||'',x.nama||''];
+ const add=(name,aoa,w)=>{const ws=X.utils.aoa_to_sheet(aoa);ws['!cols']=w.map(x=>({wch:x}));X.utils.book_append_sheet(wb,ws,name)};
+ const tbl=(list,extra)=>{const a=[H.concat(extra||[])];list.forEach(x=>a.push(R(x).concat(x._x||[])));if(!list.length)a.push(['Tidak ada temuan.']);return a};
+ // 1. Gabungan
+ add('Gabungan Hasil SO',tbl([...recs].sort((a,b)=>cmpv(a.rak,b.rak)||cmpv(a.kode,b.kode))),W);
+ // 2. Nama sama beda data
+ const cd={};recs.forEach(x=>{if(x.desc)(cd[x.desc]=cd[x.desc]||[]).push(x)});
+ add('Nama Sama Beda Data',tbl(Object.values(cd).filter(g=>g.length>1).flat().sort((a,b)=>cmpv(a.desc,b.desc)||cmpv(a.rak,b.rak)||cmpv(a.kode,b.kode))),W);
+ // 3. Kode sama beda data
+ const ck={};recs.forEach(x=>(ck[x.kode]=ck[x.kode]||[]).push(x));
+ add('Kode Sama Beda Data',tbl(Object.values(ck).filter(g=>g.length>1).flat().sort((a,b)=>cmpv(a.kode,b.kode)||cmpv(a.rak,b.rak))),W);
+ // 4. Temuan aneh
+ const C1='1. Barang Sudah Expired / ED Bulan Ini (<= '+ref+')',C2='2. Stok Komputer > 0 Tapi Fisik Kosong (Belum Terhitung)',C3='3. Fisik > 0 Tapi Expired Date Kosong',C4='4. Typo Input Nama Petugas';
+ const F=[];
+ recs.forEach(x=>{
+  if(x.ed&&x.ed<=ref){const n=mdiff(ref,x.ed);F.push({p:1,x:Object.assign({},x,{_x:[C1,n>0?'Sudah expired '+n+' bulan (ED '+x.ed+')':'ED bulan ini ('+x.ed+')']})})}
+  if(x.komp>0&&x.fisik==null)F.push({p:2,x:Object.assign({},x,{_x:[C2,'Stok komputer '+x.komp+', belum ada hasil hitung']})});
+  if(x.fisik>0&&!x.ed)F.push({p:3,x:Object.assign({},x,{_x:[C3,'Fisik '+x.fisik+' tapi Expired Date kosong']})});
+  if(x.nama&&/^[A-Za-z]+\d+$/.test(x.nama))F.push({p:4,x:Object.assign({},x,{_x:[C4,'Nama "'+x.nama+'" berakhiran angka (kemungkinan typo)']})})});
+ F.sort((a,b)=>a.p-b.p||(a.p===1?cmpv(a.x.ed,b.x.ed):0)||cmpv(a.x.rak,b.x.rak)||cmpv(a.x.kode,b.x.kode));
+ add('Temuan Aneh',tbl(F.map(f=>f.x),['Kategori Temuan','Detail Anomali']),W.concat([48,52]));
+ // 5. Kesimpulan
+ const cnt=recs.filter(x=>x.fisik!=null),pct=(a,b)=>b?Math.round(a/b*1000)/10:0,sum=(a,f)=>r2(a.reduce((t,x)=>t+f(x),0));
+ const exact=cnt.filter(x=>x.sel===0).length,sur=cnt.filter(x=>x.sel>0).length,sho=cnt.filter(x=>x.sel<0).length;
+ const dbR=[...new Set([...Object.keys(db),...Object.keys(sys)].map(c=>(db[c]&&db[c].r)||'').filter(Boolean))],dataR=[...new Set(recs.map(x=>x.rak).filter(Boolean))];
+ const missing=dbR.filter(r=>!dataR.includes(r)).sort(cmpv);
+ const edr=recs.filter(x=>x.ed),n1=mon(ref,1),n3=mon(ref,3);
+ const d=new Date(),A=[];
+ A.push(['KESIMPULAN SO']);A.push(['Dibuat',ymd(d)+' '+pad2(d.getHours())+':'+pad2(d.getMinutes())]);A.push(['Bulan acuan ED',ref]);
+ A.push(['Rak yang dicentang',rakAll().filter(x=>!RAKOFF.has(x[0])).map(x=>x[0]||'(tanpa rak)').join(', ')||'-']);A.push([]);
+ A.push(['RINGKASAN UMUM']);A.push(['Metrik','Nilai']);
+ [['Total item',recs.length],['Kode Material unik',new Set(recs.map(x=>x.kode)).size],['Rak diproses',dataR.length],['Rak belum masuk data',missing.join(', ')||'-'],
+  ['Item sudah dihitung',cnt.length],['Item belum dihitung',recs.length-cnt.length],['Item sesuai (selisih 0)',exact],['Item selisih lebih (+)',sur],['Item selisih kurang (-)',sho],
+  ['Akurasi (%)',pct(exact,cnt.length)],['Total Stok Komp (dihitung)',sum(cnt,x=>x.komp)],['Total Fisik',sum(cnt,x=>x.fisik)],['Net Selisih',sum(cnt,x=>x.sel)],
+  ['Note Gudang (unit)',sum(recs.filter(x=>x.gud!=null),x=>x.gud)]].forEach(r=>A.push(r));
+ A.push([]);A.push(['AUDIT EXPIRED DATE']);A.push(['Metrik','Nilai']);
+ [['ED sudah lewat (< '+ref+')',edr.filter(x=>x.ed<ref).length],['ED bulan ini ('+ref+')',edr.filter(x=>x.ed===ref).length],['ED 3 bulan ke depan ('+n1+' s/d '+n3+')',edr.filter(x=>x.ed>=n1&&x.ed<=n3).length],
+  ['ED aman (> '+n3+')',edr.filter(x=>x.ed>n3).length],['Fisik > 0 tanpa ED',recs.filter(x=>x.fisik>0&&!x.ed).length]].forEach(r=>A.push(r));
+ A.push([]);A.push(['KELENGKAPAN LABEL']);A.push(['Status','Jumlah']);
+ [['Lengkap',recs.filter(x=>x.lab==='Lengkap').length],['Tidak lengkap',recs.filter(x=>x.lab==='Tidak lengkap').length],['(kosong)',recs.filter(x=>x.lab!=='Lengkap'&&x.lab!=='Tidak lengkap').length]].forEach(r=>A.push(r));
+ A.push([]);A.push(['BEBAN KERJA PETUGAS']);A.push(['Nama','Jumlah Item']);
+ const wl={};recs.forEach(x=>{const k=x.nama||'(kosong)';wl[k]=(wl[k]||0)+1});
+ Object.entries(wl).sort((a,b)=>b[1]-a[1]||cmpv(a[0],b[0])).forEach(r=>A.push(r));
+ A.push([]);A.push(['PER RAK']);
+ A.push(['Rak','Total Item','Sudah Dihitung','Belum Dihitung','Sesuai (0)','Selisih (+)','Selisih (-)','Akurasi (%)','Stok Komp (Dihitung)','Total Fisik','Unit Lebih (+)','Unit Kurang (-)','Net Selisih','Note Gudang (Unit)','ED <= '+ref,'Label Tdk Lengkap','Petugas']);
+ const gr={};recs.forEach(x=>(gr[x.rak||'']=gr[x.rak||'']||[]).push(x));
+ Object.keys(gr).sort((a,b)=>a===''?1:b===''?-1:cmpv(a,b)).forEach(k=>{const g=gr[k],c=g.filter(x=>x.fisik!=null),ex=c.filter(x=>x.sel===0).length;
+  A.push([k===''?'(tanpa rak)':rakOut(k),g.length,c.length,g.length-c.length,ex,c.filter(x=>x.sel>0).length,c.filter(x=>x.sel<0).length,pct(ex,c.length),sum(c,x=>x.komp),sum(c,x=>x.fisik),
+   sum(c.filter(x=>x.sel>0),x=>x.sel),sum(c.filter(x=>x.sel<0),x=>x.sel),sum(c,x=>x.sel),sum(g.filter(x=>x.gud!=null),x=>x.gud),g.filter(x=>x.ed&&x.ed<=ref).length,g.filter(x=>x.lab==='Tidak lengkap').length,
+   [...new Set(g.map(x=>x.nama).filter(Boolean))].sort(cmpv).join(', ')])});
+ add('Kesimpulan SO',A,[36,16,14,14,12,12,12,12,18,12,14,16,12,16,14,16,28]);
+}
 
 $('#kbMode').onclick=()=>{const i=$('#manual'),n=i.inputMode==='numeric';i.inputMode=n?'text':'numeric';$('#kbMode').textContent=n?'123':'ABC';i.blur();i.focus()};
 applyLang();
